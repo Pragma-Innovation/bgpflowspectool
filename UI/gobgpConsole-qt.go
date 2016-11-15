@@ -4,13 +4,29 @@ package main
 
 import (
     "os"
+    "time"
+    "fmt"
 
-    "github.com/therecipe/qt/core"
-//    "github.com/therecipe/qt/gui"
-    "github.com/therecipe/qt/widgets"
+   "github.com/therecipe/qt/core"
+   // "github.com/therecipe/qt/gui"
+   "github.com/therecipe/qt/widgets"
+    api "github.com/osrg/gobgp/api"
+    "github.com/Matt-Texier/local-mitigation-agent/gobgpclient"
+    "google.golang.org/grpc"
 )
 
+var client api.GobgpApiClient
+
 func main() {
+    // launch gobgp API client
+    timeout := grpc.WithTimeout(time.Second)
+    conn, rpcErr := grpc.Dial("localhost:50051", timeout, grpc.WithBlock(), grpc.WithInsecure())
+    if rpcErr != nil {
+        fmt.Println(rpcErr)
+        return
+    }
+    client = api.NewGobgpApiClient(conn)
+
     widgets.NewQApplication(len(os.Args), os.Args)
     var consoleWindow = widgets.NewQMainWindow(nil, 0)
     consoleWindow.Layout().DestroyQObject()
@@ -115,7 +131,11 @@ func main() {
 
 
 func cmdNeighButtonClicked(logTextWidget *widgets.QTextEdit) {
-    logTextWidget.Append("Button Neighbors")
+    dumpNeigh := gobgpclient.TxtdumpGetNeighbor(client)
+
+    for _, p := range dumpNeigh {
+        logTextWidget.Append(p)
+    }
 }
 
 func cmdFsrib4ButtonClicked(logTextWidget *widgets.QTextEdit) {
