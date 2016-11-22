@@ -8,7 +8,7 @@ import (
     "fmt"
 
    "github.com/therecipe/qt/core"
-   // "github.com/therecipe/qt/gui"
+   "github.com/therecipe/qt/gui"
    "github.com/therecipe/qt/widgets"
     api "github.com/osrg/gobgp/api"
     "github.com/Matt-Texier/local-mitigation-agent/gobgpclient"
@@ -28,6 +28,47 @@ func main() {
     client = api.NewGobgpApiClient(conn)
 
     widgets.NewQApplication(len(os.Args), os.Args)
+    var dockWindow = widgets.NewQMainWindow(nil, 0)
+    dockWindow.Layout().DestroyQObject()
+    dockWindow.SetGeometry(core.NewQRect4(100, 100, 445, 115))
+    dockWindow.SetWindowTitle("Gabu")
+    var dockMainLayout = widgets.NewQHBoxLayout()
+    dockMainLayout.SetSpacing(6)
+    dockMainLayout.SetContentsMargins(11, 11, 11, 11)
+    dockWindow.SetLayout(dockMainLayout)
+    // main window "dock" push button
+    var dockConsolePush = widgets.NewQPushButton2("GoBgp Console", dockWindow)
+    var dockFlowSpecPush = widgets.NewQPushButton2("FlowSpec RIB", dockWindow)
+
+    var dockButtonSizePolicy = widgets.NewQSizePolicy()
+    dockButtonSizePolicy.SetHorizontalPolicy(widgets.QSizePolicy__Expanding)
+    dockButtonSizePolicy.SetVerticalPolicy(widgets.QSizePolicy__Expanding)
+    dockButtonSizePolicy.SetHorizontalStretch(0)
+    dockButtonSizePolicy.SetVerticalStretch(0)
+    dockConsolePush.SetSizePolicy(dockButtonSizePolicy)
+    dockFlowSpecPush.SetSizePolicy(dockButtonSizePolicy)
+
+    // Connect buttons to functions
+    dockConsolePush.ConnectClicked(func(_ bool) { dockConsolButtonClicked() })
+    dockFlowSpecPush.ConnectClicked(func(_ bool) { dockFspecButtonPushed() })
+    // add button to main layout
+    dockMainLayout.AddWidget(dockConsolePush, 0, 0)
+    dockMainLayout.AddWidget(dockFlowSpecPush, 0, 0)
+    dockWindow.Show()
+    widgets.QApplication_Exec()
+
+}
+
+func dockConsolButtonClicked() {
+    consoleWin()
+}
+
+func dockFspecButtonPushed() {
+    fmt.Printf("hello world !\n")
+}
+
+func consoleWin() {
+
     var consoleWindow = widgets.NewQMainWindow(nil, 0)
     consoleWindow.Layout().DestroyQObject()
     consoleWindow.SetGeometry(core.NewQRect4(100, 100, 1000, 600))
@@ -67,6 +108,8 @@ func main() {
     logLayout.AddWidget(logLabel, 0, core.Qt__AlignLeft)
 
     var logText = widgets.NewQTextEdit(logFrame)
+    var fixeFont = gui.NewQFont2("monospace", 10, 0, false)
+    logText.SetFont(fixeFont)
     var logTextSizePolicy = widgets.NewQSizePolicy()
     logTextSizePolicy.SetHorizontalPolicy(widgets.QSizePolicy__Expanding)
     logTextSizePolicy.SetVerticalPolicy(widgets.QSizePolicy__Expanding)
@@ -125,8 +168,6 @@ func main() {
     cmdFsrib6Button.ConnectClicked(func(_ bool) { cmdFsrib6ButtonClicked(logText) })
 
     consoleWindow.Show()
-
-    widgets.QApplication_Exec()
 }
 
 
@@ -134,14 +175,15 @@ func cmdNeighButtonClicked(logTextWidget *widgets.QTextEdit) {
     dumpNeigh := gobgpclient.TxtdumpGetNeighbor(client)
 
     for _, p := range dumpNeigh {
-        logTextWidget.Append(p)
+        logTextWidget.InsertPlainText(p)
     }
+    logTextWidget.InsertPlainText("\n")
 }
 
 func cmdFsrib4ButtonClicked(logTextWidget *widgets.QTextEdit) {
-    logTextWidget.Append("Button FlowSpec 4")
+    logTextWidget.InsertPlainText("Button FlowSpec 4\n\n")
 }
 
 func cmdFsrib6ButtonClicked(logTextWidget *widgets.QTextEdit) {
-    logTextWidget.Append("Button FlowSpec 6")
+    logTextWidget.Append("Button FlowSpec 6\n\n")
 }
