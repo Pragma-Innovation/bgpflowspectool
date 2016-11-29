@@ -1,4 +1,7 @@
-//source: http://doc.qt.io/qt-5/qtwidgets-widgets-lineedits-example.html
+// Provide UI for the whole tool
+// There is a main window looking a bit like a dock
+// with push buttons opening each window managing each
+// function of the software
 
 package main
 
@@ -22,6 +25,7 @@ func main() {
     timeout := grpc.WithTimeout(time.Second)
     conn, rpcErr := grpc.Dial("localhost:50051", timeout, grpc.WithBlock(), grpc.WithInsecure())
     if rpcErr != nil {
+        fmt.Printf("GoBGP is probably not running on the local server ... Please start gobgpd process !\n")
         fmt.Println(rpcErr)
         return
     }
@@ -30,7 +34,7 @@ func main() {
     widgets.NewQApplication(len(os.Args), os.Args)
     var dockWindow = widgets.NewQMainWindow(nil, 0)
     dockWindow.Layout().DestroyQObject()
-    dockWindow.SetGeometry(core.NewQRect4(100, 100, 445, 115))
+    dockWindow.SetGeometry(core.NewQRect4(100, 100, 400, 50))
     dockWindow.SetWindowTitle("Gabu")
     var dockMainLayout = widgets.NewQHBoxLayout()
     dockMainLayout.SetSpacing(6)
@@ -64,8 +68,12 @@ func dockConsolButtonClicked() {
 }
 
 func dockFspecButtonPushed() {
-    fmt.Printf("hello world !\n")
+    flowspecWin()
 }
+
+
+
+
 
 func consoleWin() {
 
@@ -186,4 +194,119 @@ func cmdFsrib4ButtonClicked(logTextWidget *widgets.QTextEdit) {
 
 func cmdFsrib6ButtonClicked(logTextWidget *widgets.QTextEdit) {
     logTextWidget.Append("Button FlowSpec 6\n\n")
+}
+
+
+func flowspecWin() {
+    // Expanding Size policy
+    var expandingSizePolicy = widgets.NewQSizePolicy()
+    expandingSizePolicy.SetHorizontalPolicy(widgets.QSizePolicy__Expanding)
+    expandingSizePolicy.SetVerticalPolicy(widgets.QSizePolicy__Expanding)
+    expandingSizePolicy.SetHorizontalStretch(0)
+    expandingSizePolicy.SetVerticalStretch(0)
+
+    // preferred size policy
+    var preferredSizePolicy = widgets.NewQSizePolicy()
+    preferredSizePolicy.SetHorizontalPolicy(widgets.QSizePolicy__Preferred)
+    preferredSizePolicy.SetVerticalPolicy(widgets.QSizePolicy__Preferred)
+    preferredSizePolicy.SetHorizontalStretch(0)
+    preferredSizePolicy.SetVerticalStretch(0)
+
+    // Flowspec main window
+    var flowspecWindow = widgets.NewQMainWindow(nil, 0)
+    flowspecWindow.Layout().DestroyQObject()
+    flowspecWindow.SetGeometry(core.NewQRect4(100, 100, 1000, 600))
+    flowspecWindow.SetWindowTitle("Flowspec Configuration")
+    var flowspecWindowLayout = widgets.NewQVBoxLayout()
+    flowspecWindowLayout.SetSpacing(6)
+    flowspecWindowLayout.SetContentsMargins(11, 11, 11, 11)
+    flowspecWindow.SetLayout(flowspecWindowLayout)
+
+    // create two frames, one to host flwospec rule config
+    // and another one to manage flowspec FIB towards GoBGP
+    var editRuleFrame = widgets.NewQFrame(flowspecWindow, 0)
+    var ribManipFrame = widgets.NewQFrame(flowspecWindow, 0)
+    editRuleFrame.SetSizePolicy(preferredSizePolicy)
+    ribManipFrame.SetSizePolicy(preferredSizePolicy)
+    editRuleFrame.SetFrameShape(widgets.QFrame__Panel)
+    editRuleFrame.SetFrameShadow(widgets.QFrame__Raised)
+    ribManipFrame.SetFrameShape(widgets.QFrame__Panel)
+    ribManipFrame.SetFrameShadow(widgets.QFrame__Raised)
+    flowspecWindowLayout.AddWidget(editRuleFrame, 0, 0)
+    flowspecWindowLayout.AddWidget(ribManipFrame, 0, 0)
+    var editRuleFrameLayout = widgets.NewQHBoxLayout()
+    var ribManipFrameLayout = widgets.NewQHBoxLayout()
+    editRuleFrame.SetLayout(editRuleFrameLayout)
+    ribManipFrame.SetLayout(ribManipFrameLayout)
+
+    // Create content of editRuleFrame
+    // Widget for table that display library
+    var editRuleLibWid = widgets.NewQWidget(editRuleFrame, 0)
+    editRuleLibWid.SetSizePolicy(preferredSizePolicy)
+    editRuleFrameLayout.AddWidget(editRuleLibWid, 0, 0)
+    var editRuleLibWidLayout = widgets.NewQVBoxLayout()
+    editRuleLibWid.SetLayout(editRuleLibWidLayout)
+    var editRuleLabel = widgets.NewQLabel2("Rules Library", editRuleLibWid, 0)
+    var editRuleTable = widgets.NewQTableWidget(editRuleLibWid)
+    editRuleTable.SetSizePolicy(expandingSizePolicy)
+    editRuleLibWidLayout.AddWidget(editRuleLabel, 0, 0)
+    editRuleLibWidLayout.AddWidget(editRuleTable, 0, 0)
+
+    // Widget for push button to move item from table library
+    // to the edit rule widget
+    var editRulePushWid = widgets.NewQWidget(editRuleFrame, 0)
+    editRulePushWid.SetSizePolicy(preferredSizePolicy)
+    editRuleFrameLayout.AddWidget(editRulePushWid, 0, 0)
+    var editRulePushLayout = widgets.NewQVBoxLayout()
+    editRulePushWid.SetLayout(editRulePushLayout)
+    var editRulePushTopSpacer = widgets.NewQSpacerItem(20, 40, widgets.QSizePolicy__Fixed, widgets.QSizePolicy__Expanding)
+    editRulePushLayout.AddItem(editRulePushTopSpacer)
+    var editRulePushToEdit = widgets.NewQPushButton2(">", editRulePushWid)
+    editRulePushLayout.AddWidget(editRulePushToEdit, 0, 0)
+    var editRulePushToLib = widgets.NewQPushButton2("<", editRulePushWid)
+    editRulePushLayout.AddWidget(editRulePushToLib, 0, 0)
+    var editRulePushBottomSpacer = widgets.NewQSpacerItem(20, 40, widgets.QSizePolicy__Fixed, widgets.QSizePolicy__Expanding)
+    editRulePushLayout.AddItem(editRulePushBottomSpacer)
+
+    // Edit rule widget creation: it includes all required
+    // UI Widget to edit a BGP flowspec rule
+    var editRuleMainWid = widgets.NewQWidget(editRuleFrame, 0)
+    editRuleMainWid.SetSizePolicy(preferredSizePolicy)
+    editRuleFrameLayout.AddWidget(editRuleMainWid, 0, 0)
+    var editRuleMainWidLayout = widgets.NewQVBoxLayout()
+    editRuleMainWid.SetLayout(editRuleMainWidLayout)
+    // Editing widets of Edit rule widget
+    var editRuleMainWidLabel = widgets.NewQLabel2("Edit Flowspec Rule", editRuleMainWid, 0)
+    editRuleMainWidLayout.AddWidget(editRuleMainWidLabel, 0, 0)
+    // Radio button for address family
+    var editAddrFamGroupBox = widgets.NewQGroupBox2("Address Family", editRuleMainWid)
+    editRuleMainWidLayout.AddWidget(editAddrFamGroupBox, 0, 0)
+    var editAddrFamLayout = widgets.NewQHBoxLayout()
+    editAddrFamGroupBox.SetLayout(editAddrFamLayout)
+    var editAddrFamIpv4 = widgets.NewQRadioButton2("Flowspec IPv4", editAddrFamGroupBox)
+    editAddrFamLayout.AddWidget(editAddrFamIpv4, 0, 0)
+    editAddrFamIpv4.SetChecked(true)
+    var editAddrFamIpv6 = widgets.NewQRadioButton2("Flowspec IPv6", editAddrFamGroupBox)
+    editAddrFamLayout.AddWidget(editAddrFamIpv6, 0, 0)
+    // Line edit for source and dest prefix
+    var editRulePrefixGroupBox = widgets.NewQGroupBox2("Prefix filter", editRuleMainWid)
+    editRuleMainWidLayout.AddWidget(editRulePrefixGroupBox, 0, 0)
+    var editRulePrefixLayout = widgets.NewQGridLayout2()
+    editRulePrefixGroupBox.SetLayout(editRulePrefixLayout)
+    var (
+        editRuleSrcPrefixLabel = widgets.NewQLabel2("Source Prefix:", editRulePrefixGroupBox, 0)
+        editRuleDstPrefixLabel = widgets.NewQLabel2("Destination Prefix:", editRulePrefixGroupBox, 0)
+        editRuleSrcPrefixLineEdit = widgets.NewQLineEdit(nil)
+        editRuleDstPrefixLineEdit = widgets.NewQLineEdit(nil)
+    )
+    editRuleSrcPrefixLineEdit.SetPlaceholderText("1.1.1.1/32")
+    editRuleDstPrefixLineEdit.SetPlaceholderText("2.2.2.2/24")
+    editRulePrefixLayout.AddWidget(editRuleSrcPrefixLabel, 0, 0, 0)
+    editRulePrefixLayout.AddWidget(editRuleSrcPrefixLineEdit, 0, 1, 0)
+    editRulePrefixLayout.AddWidget(editRuleDstPrefixLabel, 1, 0, 0)
+    editRulePrefixLayout.AddWidget(editRuleDstPrefixLineEdit, 1, 1, 0)
+    var editRuleMainWidSpacer = widgets.NewQSpacerItem(20, 40, widgets.QSizePolicy__Fixed, widgets.QSizePolicy__Expanding)
+    editRuleMainWidLayout.AddItem(editRuleMainWidSpacer)
+
+    flowspecWindow.Show()
 }
