@@ -18,6 +18,54 @@ import (
     "google.golang.org/grpc"
 )
 
+// data strcutures used by both API functions and UI
+// BGP flowspec update structure as exported from UI
+
+type BgpFsRule struct {
+    DstPrefix string
+    SrcPrefix string
+    AddrFam string
+    Port string
+    SrcPort string
+    DstPort string
+    TcpFlags string
+    IcmpType string
+    IcmpCode string
+    ProtoNumber string
+    PacketLen string
+    Dscp string
+    IpFrag string
+    Action string
+}
+
+var BgpFsActivLib = []BgpFsRule{
+    {DstPrefix: "1.1.1.1/32", SrcPrefix: "2.2.2.2/32", AddrFam: "IPv4", Port: "8080",
+     SrcPort: "80", DstPort: "443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "6",
+     PacketLen: "1024", Dscp: "22", IpFrag: "", Action: "",},
+    {DstPrefix: "3.3.3.3/32", SrcPrefix: "4.4.4.4/32", AddrFam: "IPv4", Port: "8080",
+     SrcPort: "80", DstPort: "443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "6",
+     PacketLen: "1024", Dscp: "22", IpFrag: "", Action: "",},
+    {DstPrefix: "5.5.5.5/32", SrcPrefix: "6.6.6.6/32", AddrFam: "IPv4", Port: "8080",
+     SrcPort: "80", DstPort: "443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "6",
+     PacketLen: "1024", Dscp: "22", IpFrag: "", Action: "",},
+}
+
+var (
+    editRuleSrcPrefixLineEdit *widgets.QLineEdit
+    editRuleDstPrefixLineEdit *widgets.QLineEdit
+    editRuleIcmpTypeLineEdit *widgets.QLineEdit
+    editRuleIcmpCodeLineEdit *widgets.QLineEdit
+    editRuleIpProtoLineEdit *widgets.QLineEdit
+    editRulePortLineEdit *widgets.QLineEdit
+    editRuleSrcPortLineEdit *widgets.QLineEdit
+    editRuleDstPortLineEdit *widgets.QLineEdit
+    editRuleTcpFlagFilterLine *widgets.QLineEdit
+    editRuleLenLineEdit *widgets.QLineEdit
+    editRuleDscpLineEdit *widgets.QLineEdit
+    editRuleFragFilterLine *widgets.QLineEdit
+)
+
+
 var client api.GobgpApiClient
 
 func main() {
@@ -215,7 +263,7 @@ func flowspecWin() {
     // Flowspec main window
     var flowspecWindow = widgets.NewQMainWindow(nil, 0)
     flowspecWindow.Layout().DestroyQObject()
-    flowspecWindow.SetGeometry(core.NewQRect4(100, 100, 1000, 600))
+    flowspecWindow.SetGeometry(core.NewQRect4(100, 100, 1000, 800))
     flowspecWindow.SetWindowTitle("Flowspec Configuration")
     var flowspecWindowLayout = widgets.NewQVBoxLayout()
     flowspecWindowLayout.SetSpacing(6)
@@ -247,28 +295,18 @@ func flowspecWin() {
     var editRuleLibWidLayout = widgets.NewQVBoxLayout()
     editRuleLibWid.SetLayout(editRuleLibWidLayout)
     var editRuleLabel = widgets.NewQLabel2("Rules Library", editRuleLibWid, 0)
-    var editRuleTable = widgets.NewQTableWidget(editRuleLibWid)
-    editRuleTable.SetSizePolicy(expandingSizePolicy)
+    var editRuleTree = widgets.NewQTreeWidget(editRuleLibWid)
+    editRuleTree.SetSizePolicy(expandingSizePolicy)
     editRuleLibWidLayout.AddWidget(editRuleLabel, 0, 0)
-    editRuleLibWidLayout.AddWidget(editRuleTable, 0, 0)
-
-    // Widget for push button to move item from table library
-    // to the edit rule widget
-    var editRulePushWid = widgets.NewQWidget(editRuleFrame, 0)
-    editRulePushWid.SetSizePolicy(preferredSizePolicy)
-    editRuleFrameLayout.AddWidget(editRulePushWid, 0, 0)
-    var editRulePushLayout = widgets.NewQVBoxLayout()
-    editRulePushWid.SetLayout(editRulePushLayout)
-    var editRulePushTopSpacer = widgets.NewQSpacerItem(20, 40, widgets.QSizePolicy__Fixed, widgets.QSizePolicy__Expanding)
-    editRulePushLayout.AddItem(editRulePushTopSpacer)
-    var editRulePushToEdit = widgets.NewQPushButton2(">", editRulePushWid)
-    editRulePushLayout.AddWidget(editRulePushToEdit, 0, 0)
-    editRulePushToEdit.SetMaximumWidth(20)
-    var editRulePushToLib = widgets.NewQPushButton2("<", editRulePushWid)
-    editRulePushLayout.AddWidget(editRulePushToLib, 0, 0)
-    editRulePushToLib.SetMaximumWidth(20)
-    var editRulePushBottomSpacer = widgets.NewQSpacerItem(20, 40, widgets.QSizePolicy__Fixed, widgets.QSizePolicy__Expanding)
-    editRulePushLayout.AddItem(editRulePushBottomSpacer)
+    editRuleLibWidLayout.AddWidget(editRuleTree, 0, 0)
+    editRuleTree.SetColumnCount(13)
+    var editRuleTreeHeaderItem = editRuleTree.HeaderItem()
+    libHeaderLabels := []string{"Dst Prefix", "Src Prefix", "Port", "Src Port", "Dst Port", "TCP flags",
+"ICMP Type", "ICMP code", "Proto Number", "Packet Len", "DSCP", "IP Frag", "Action"}
+    for i, myLabel := range libHeaderLabels {
+        editRuleTreeHeaderItem.SetText(i, myLabel)
+    }
+    fullfilTreeWithRuleLib(editRuleTree, BgpFsActivLib)
 
     // Edit rule widget creation: it includes all required
     // UI Widget to edit a BGP flowspec rule
@@ -277,37 +315,33 @@ func flowspecWin() {
     editRuleFrameLayout.AddWidget(editRuleMainWid, 0, 0)
     var editRuleMainWidLayout = widgets.NewQVBoxLayout()
     editRuleMainWid.SetLayout(editRuleMainWidLayout)
-    // Editing widets of Edit rule widget
-    var editRuleMainWidLabel = widgets.NewQLabel2("Edit Flowspec Rule", editRuleMainWid, 0)
+    // Editing widets of Edit Match filter
+    var editRuleMainWidLabel = widgets.NewQLabel2("Edit Flowspec Match Filter", editRuleMainWid, 0)
     editRuleMainWidLayout.AddWidget(editRuleMainWidLabel, 0, 0)
-    // Radio button for address family
-    var editAddrFamGroupBox = widgets.NewQGroupBox2("Address Family", editRuleMainWid)
-    editRuleMainWidLayout.AddWidget(editAddrFamGroupBox, 0, 0)
-    var editAddrFamLayout = widgets.NewQHBoxLayout()
-    editAddrFamGroupBox.SetLayout(editAddrFamLayout)
-    var editAddrFamIpv4 = widgets.NewQRadioButton2("Flowspec IPv4", editAddrFamGroupBox)
-    editAddrFamLayout.AddWidget(editAddrFamIpv4, 0, 0)
-    editAddrFamIpv4.SetChecked(true)
-    var editAddrFamIpv6 = widgets.NewQRadioButton2("Flowspec IPv6", editAddrFamGroupBox)
-    editAddrFamLayout.AddWidget(editAddrFamIpv6, 0, 0)
+
     // Line edit for source and dest prefix
-    var editRulePrefixGroupBox = widgets.NewQGroupBox2("Prefix filters", editRuleMainWid)
+    var editRulePrefixGroupBox = widgets.NewQGroupBox2("Address family and Prefix filters", editRuleMainWid)
     editRuleMainWidLayout.AddWidget(editRulePrefixGroupBox, 0, 0)
     var editRulePrefixLayout = widgets.NewQGridLayout2()
     editRulePrefixGroupBox.SetLayout(editRulePrefixLayout)
     var (
         editRuleSrcPrefixLabel = widgets.NewQLabel2("Source Prefix:", editRulePrefixGroupBox, 0)
         editRuleDstPrefixLabel = widgets.NewQLabel2("Destination Prefix:", editRulePrefixGroupBox, 0)
-        editRuleSrcPrefixLineEdit = widgets.NewQLineEdit(nil)
-        editRuleDstPrefixLineEdit = widgets.NewQLineEdit(nil)
+        editAddrFamIpv4 = widgets.NewQRadioButton2("Flowspec IPv4", editRulePrefixGroupBox)
+        editAddrFamIpv6 = widgets.NewQRadioButton2("Flowspec IPv6", editRulePrefixGroupBox)
     )
+    editRuleSrcPrefixLineEdit = widgets.NewQLineEdit(nil)
+    editRuleDstPrefixLineEdit = widgets.NewQLineEdit(nil)
     editRuleSrcPrefixLineEdit.SetPlaceholderText("1.1.1.1/32")
     editRuleDstPrefixLineEdit.SetPlaceholderText("2.2.2.2/24")
+    editAddrFamIpv4.SetChecked(true)
     editRulePrefixLayout.AddWidget(editRuleSrcPrefixLabel, 0, 0, 0)
     editRulePrefixLayout.AddWidget(editRuleSrcPrefixLineEdit, 0, 1, 0)
+    editRulePrefixLayout.AddWidget(editAddrFamIpv4, 0, 2, 0)
     editRulePrefixLayout.AddWidget(editRuleDstPrefixLabel, 1, 0, 0)
     editRulePrefixLayout.AddWidget(editRuleDstPrefixLineEdit, 1, 1, 0)
-    // horizontal widget to group ICMP and proto type
+    editRulePrefixLayout.AddWidget(editAddrFamIpv6, 1, 2, 0)
+    // horizontal widget to group together ICMP and proto type
     var editRuleIcmpProtoWid = widgets.NewQWidget(editRuleMainWid, 0)
     editRuleMainWidLayout.AddWidget(editRuleIcmpProtoWid, 0, 0)
     var editRuleIcmpProtoWidLayout = widgets.NewQHBoxLayout()
@@ -321,9 +355,9 @@ func flowspecWin() {
     var (
         editRuleIcmpTypeLabel = widgets.NewQLabel2("ICMP Type:", editRuleIcmpGroupBox, 0)
         editRuleIcmpCodeLabel = widgets.NewQLabel2("ICMP Code:", editRuleIcmpGroupBox, 0)
-        editRuleIcmpTypeLineEdit = widgets.NewQLineEdit(nil)
-        editRuleIcmpCodeLineEdit = widgets.NewQLineEdit(nil)
     )
+    editRuleIcmpTypeLineEdit = widgets.NewQLineEdit(nil)
+    editRuleIcmpCodeLineEdit = widgets.NewQLineEdit(nil)
     editRuleIcmpTypeLineEdit.SetPlaceholderText("'=0' '=8'")
     editRuleIcmpCodeLineEdit.SetPlaceholderText("'=0'")
     editRuleIcmpLayout.AddWidget(editRuleIcmpTypeLabel, 0, 0, 0)
@@ -337,8 +371,8 @@ func flowspecWin() {
     editRuleIpProtoGroupBox.SetLayout(editRuleIpProtoLayout)
     var (
         editRuleIpProtoLabel = widgets.NewQLabel2("Protocol number:", editRuleIcmpGroupBox, 0)
-        editRuleIpProtoLineEdit = widgets.NewQLineEdit(nil)
     )
+    editRuleIpProtoLineEdit = widgets.NewQLineEdit(nil)
     editRuleIpProtoLineEdit.SetPlaceholderText("'=6' '=17'")
     editRuleIpProtoLayout.AddWidget(editRuleIpProtoLabel, 0, 0, 0)
     editRuleIpProtoLayout.AddWidget(editRuleIpProtoLineEdit, 0, 1, 0)
@@ -352,10 +386,10 @@ func flowspecWin() {
         editRulePortLabel = widgets.NewQLabel2("Port:", editRulePortGroupBox, 0)
         editRuleSrcPortLabel = widgets.NewQLabel2("Source Port:", editRulePortGroupBox, 0)
         editRuleDstPortLabel = widgets.NewQLabel2("Destination Port:", editRulePortGroupBox, 0)
-        editRulePortLineEdit = widgets.NewQLineEdit(nil)
-        editRuleSrcPortLineEdit = widgets.NewQLineEdit(nil)
-        editRuleDstPortLineEdit = widgets.NewQLineEdit(nil)
     )
+    editRulePortLineEdit = widgets.NewQLineEdit(nil)
+    editRuleSrcPortLineEdit = widgets.NewQLineEdit(nil)
+    editRuleDstPortLineEdit = widgets.NewQLineEdit(nil)
     editRulePortLineEdit.SetPlaceholderText("'=80' '>=8080&<=8888'")
     editRuleSrcPortLineEdit.SetPlaceholderText("'=443&=80'")
     editRuleDstPortLineEdit.SetPlaceholderText("'>=1024&<=49151'")
@@ -383,11 +417,10 @@ func flowspecWin() {
         editRuleTcpOpAndCheck = widgets.NewQCheckBox2("AND", editRuleTcpFlagGroupBox)
         editRuleTcpOpNotCheck = widgets.NewQCheckBox2("NOT", editRuleTcpFlagGroupBox)
         editRuleTcpOpMatchCheck = widgets.NewQCheckBox2("MATCH", editRuleTcpFlagGroupBox)
-        editRuleTcpFlagFilterLine = widgets.NewQLineEdit(nil)
         editRuleTcpFlagFilterLabel = widgets.NewQLabel2("Filter:", editRuleTcpFlagGroupBox, 0)
         editRuleTcpFlagAddButton = widgets.NewQPushButton2("Add", editRuleTcpFlagGroupBox)
     )
-
+    editRuleTcpFlagFilterLine = widgets.NewQLineEdit(nil)
     editRuleLineSeparator.SetFrameShape(widgets.QFrame__VLine)
     editRuleLineSeparator.SetFrameShadow(widgets.QFrame__Sunken)
     editRuleTcpFlagLayout.AddWidget(editRuleTcpSynFlagCheck, 0, 0, 0)
@@ -406,10 +439,126 @@ func flowspecWin() {
     editRuleTcpFlagLayout.AddWidget(editRuleTcpOpMatchCheck, 1, 7, 0)
     editRuleTcpFlagLayout.AddWidget(editRuleTcpFlagAddButton, 1, 8, 0)
 
+    // Line edit for packet length and DSCP
+    var editRuleLenDscpGroupBox = widgets.NewQGroupBox2("Packet Length and DSCP", editRuleMainWid)
+    editRuleMainWidLayout.AddWidget(editRuleLenDscpGroupBox, 0, 0)
+    var editRuleLenDscpLayout = widgets.NewQGridLayout2()
+    editRuleLenDscpGroupBox.SetLayout(editRuleLenDscpLayout)
+    var (
+        editRuleLenLabel = widgets.NewQLabel2("Packet length:", editRuleLenDscpGroupBox, 0)
+        editRuleDscpLabel = widgets.NewQLabel2("DiffServ Codepoints:", editRuleLenDscpGroupBox, 0)
 
+    )
+    editRuleLenLineEdit = widgets.NewQLineEdit(nil)
+    editRuleDscpLineEdit = widgets.NewQLineEdit(nil)
+    editRuleLenLineEdit.SetPlaceholderText("'>=64&<=1024'")
+    editRuleDscpLineEdit.SetPlaceholderText("'=46'")
+    editRuleLenDscpLayout.AddWidget(editRuleLenLabel, 0, 0, 0)
+    editRuleLenDscpLayout.AddWidget(editRuleLenLineEdit, 0, 1, 0)
+    editRuleLenDscpLayout.AddWidget(editRuleDscpLabel, 0, 2, 0)
+    editRuleLenDscpLayout.AddWidget(editRuleDscpLineEdit, 0, 3, 0)
+
+    // Line edit and checkbox for fragment filtering
+    var editRuleFragGroupBox = widgets.NewQGroupBox2("IP Fragment", editRuleMainWid)
+    editRuleMainWidLayout.AddWidget(editRuleFragGroupBox, 0, 0)
+    var editRuleFragLayout = widgets.NewQGridLayout2()
+    editRuleFragGroupBox.SetLayout(editRuleFragLayout)
+    var (
+        editRuleIsfFragCheck = widgets.NewQCheckBox2("IsF", editRuleFragGroupBox)
+        editRuleFfFragCheck = widgets.NewQCheckBox2("FF", editRuleFragGroupBox)
+        editRuleLfFragCheck = widgets.NewQCheckBox2("LF", editRuleFragGroupBox)
+        editRuleDfFragCheck = widgets.NewQCheckBox2("DF", editRuleFragGroupBox)
+        editRuleAndFragCheck = widgets.NewQCheckBox2("AND", editRuleFragGroupBox)
+        editRuleNotFragCheck = widgets.NewQCheckBox2("NOT", editRuleFragGroupBox)
+        editRuleMatchFragCheck = widgets.NewQCheckBox2("MATCH", editRuleFragGroupBox)
+        editRuleLineFragSeparator = widgets.NewQFrame(editRuleFragGroupBox, 0)
+        editRuleFragFilterLabel = widgets.NewQLabel2("Filter:", editRuleFragGroupBox, 0)
+        editRuleAddFragButton = widgets.NewQPushButton2("Add", editRuleFragGroupBox)
+    )
+    editRuleFragFilterLine = widgets.NewQLineEdit(nil)
+    editRuleLineFragSeparator.SetFrameShape(widgets.QFrame__VLine)
+    editRuleLineFragSeparator.SetFrameShadow(widgets.QFrame__Sunken)
+    editRuleFragLayout.AddWidget(editRuleIsfFragCheck, 0, 0, 0)
+    editRuleFragLayout.AddWidget(editRuleFfFragCheck, 0, 1, 0)
+    editRuleFragLayout.AddWidget(editRuleLfFragCheck, 1, 0, 0)
+    editRuleFragLayout.AddWidget(editRuleDfFragCheck, 1, 1, 0)
+    editRuleFragLayout.AddWidget3(editRuleLineFragSeparator, 0, 2, 2, 1, 0)
+    editRuleFragLayout.AddWidget(editRuleAndFragCheck, 1, 3, 0)
+    editRuleFragLayout.AddWidget(editRuleNotFragCheck, 1, 4, 0)
+    editRuleFragLayout.AddWidget(editRuleMatchFragCheck, 1, 5, 0)
+    editRuleFragLayout.AddWidget(editRuleAddFragButton, 1, 6, 0)
+    editRuleFragLayout.AddWidget3(editRuleFragFilterLabel, 0, 3, 1, 1, 0)
+    editRuleFragLayout.AddWidget3(editRuleFragFilterLine, 0, 4, 1, 3, 0)
+
+    // Editing widets of Action applied to match traffic
+    var editRuleMainWidLabelMatch = widgets.NewQLabel2("Edit Flowspec Action", editRuleMainWid, 0)
+    editRuleMainWidLayout.AddWidget(editRuleMainWidLabelMatch, 0, 0)
+    // Match group box widget
+    var editRuleActionGroupBox = widgets.NewQGroupBox2("Action applied", editRuleMainWid)
+    editRuleMainWidLayout.AddWidget(editRuleActionGroupBox, 0, 0)
+    var editRuleActionLayout = widgets.NewQGridLayout2()
+    editRuleActionGroupBox.SetLayout(editRuleActionLayout)
+    var (
+        editRuleActionCombo = widgets.NewQComboBox(nil)
+        editRuleRouteTargetLine = widgets.NewQLineEdit(nil)
+    )
+    editRuleActionCombo.AddItems([]string{"Drop", "Shape", "Redirect", "Marking"})
+    editRuleActionLayout.AddWidget(editRuleActionCombo, 0, 0, 0)
+    editRuleActionLayout.AddWidget(editRuleRouteTargetLine, 1, 0, 0)
+
+    // global apply button
+    var editRuleGlobButtonFrame = widgets.NewQFrame(editRuleMainWid, 0)
+    var editRuleGlobButtonlayout = widgets.NewQGridLayout2()
+    editRuleGlobButtonFrame.SetLayout(editRuleGlobButtonlayout)
+    editRuleMainWidLayout.AddWidget(editRuleGlobButtonFrame, 0, 0)
+    var (
+        editGlobButtonNew = widgets.NewQPushButton2("New", editRuleGlobButtonFrame)
+        editGlobButtonApply = widgets.NewQPushButton2("Apply", editRuleGlobButtonFrame)
+        editGlobButtonReset = widgets.NewQPushButton2("Reset", editRuleGlobButtonFrame)
+        editGlobButtonDelete = widgets.NewQPushButton2("Delete", editRuleGlobButtonFrame)
+
+    )
+    editRuleGlobButtonFrame.SetFrameShape(widgets.QFrame__Panel)
+    editRuleGlobButtonFrame.SetFrameShadow(widgets.QFrame__Raised)
+    editRuleGlobButtonlayout.AddWidget(editGlobButtonNew, 0, 0, 0)
+    editRuleGlobButtonlayout.AddWidget(editGlobButtonApply, 0, 1, 0)
+    editRuleGlobButtonlayout.AddWidget(editGlobButtonReset, 0, 2, 0)
+    editRuleGlobButtonlayout.AddWidget(editGlobButtonDelete, 0, 3, 0)
 
     var editRuleMainWidSpacer = widgets.NewQSpacerItem(20, 40, widgets.QSizePolicy__Fixed, widgets.QSizePolicy__Expanding)
     editRuleMainWidLayout.AddItem(editRuleMainWidSpacer)
+    // Connection of all widgetq
+    // Tree Widget
+    editRuleTree.ConnectItemClicked(editRuleLibItemSelected)
 
     flowspecWindow.Show()
+}
+
+// Copy the content of a flowspec rule structure into a TreeItem widget
+
+func fullfilItemWithRule(ty int, myTree *widgets.QTreeWidget, myRule BgpFsRule) {
+    var myItem = widgets.NewQTreeWidgetItem3(myTree, ty)
+    myItem.SetText(0, myRule.DstPrefix)
+    myItem.SetText(1, myRule.SrcPrefix)
+    myItem.SetText(2, myRule.Port)
+    myItem.SetText(3, myRule.SrcPort)
+    myItem.SetText(4, myRule.DstPort)
+    myItem.SetText(5, myRule.TcpFlags)
+    myItem.SetText(6, myRule.IcmpType)
+    myItem.SetText(7, myRule.IcmpCode)
+    myItem.SetText(8, myRule.ProtoNumber)
+    myItem.SetText(9, myRule.PacketLen)
+    myItem.SetText(10, myRule.Dscp)
+    myItem.SetText(11, myRule.IpFrag)
+    myItem.SetText(12, myRule.Action)
+}
+
+func fullfilTreeWithRuleLib(myTree *widgets.QTreeWidget, myRuleLib []BgpFsRule) {
+    for i, myRule := range myRuleLib {
+        fullfilItemWithRule(i, myTree, myRule)
+    }
+}
+
+func editRuleLibItemSelected(myItem *widgets.QTreeWidgetItem, column int) {
+    fmt.Printf("coucou\n")
 }
