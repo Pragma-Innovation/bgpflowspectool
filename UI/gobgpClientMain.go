@@ -63,6 +63,7 @@ var (
     editRuleLenLineEdit *widgets.QLineEdit
     editRuleDscpLineEdit *widgets.QLineEdit
     editRuleFragFilterLine *widgets.QLineEdit
+    editRuleTree *widgets.QTreeWidget
 )
 
 
@@ -295,7 +296,7 @@ func flowspecWin() {
     var editRuleLibWidLayout = widgets.NewQVBoxLayout()
     editRuleLibWid.SetLayout(editRuleLibWidLayout)
     var editRuleLabel = widgets.NewQLabel2("Rules Library", editRuleLibWid, 0)
-    var editRuleTree = widgets.NewQTreeWidget(editRuleLibWid)
+    editRuleTree = widgets.NewQTreeWidget(editRuleLibWid)
     editRuleTree.SetSizePolicy(expandingSizePolicy)
     editRuleLibWidLayout.AddWidget(editRuleLabel, 0, 0)
     editRuleLibWidLayout.AddWidget(editRuleTree, 0, 0)
@@ -527,9 +528,15 @@ func flowspecWin() {
 
     var editRuleMainWidSpacer = widgets.NewQSpacerItem(20, 40, widgets.QSizePolicy__Fixed, widgets.QSizePolicy__Expanding)
     editRuleMainWidLayout.AddItem(editRuleMainWidSpacer)
-    // Connection of all widgetq
+    // Connection of all widget to QT slots and actions
     // Tree Widget
     editRuleTree.ConnectItemClicked(editRuleLibItemSelected)
+    // push button from rule edition
+    // Connect push buttons
+    editGlobButtonApply.ConnectClicked(func(_ bool) { editGlobButtonApplyFunc() })
+    editGlobButtonNew.ConnectClicked(func(_ bool) { editGlobButtonNewFunc() })
+    editGlobButtonDelete.ConnectClicked(func(_ bool) { editGlobButtonDeleteFunc() })
+    editGlobButtonReset.ConnectClicked(func(_ bool) { editGlobButtonResetFunc() })
 
     flowspecWindow.Show()
 }
@@ -553,12 +560,64 @@ func fullfilItemWithRule(ty int, myTree *widgets.QTreeWidget, myRule BgpFsRule) 
     myItem.SetText(12, myRule.Action)
 }
 
+
 func fullfilTreeWithRuleLib(myTree *widgets.QTreeWidget, myRuleLib []BgpFsRule) {
     for i, myRule := range myRuleLib {
         fullfilItemWithRule(i, myTree, myRule)
     }
 }
 
+func fullfilLineEditWithBgpFs(myRule BgpFsRule) {
+    editRuleSrcPrefixLineEdit.SetText(myRule.SrcPrefix)
+    editRuleDstPrefixLineEdit.SetText(myRule.DstPrefix)
+    editRuleIcmpTypeLineEdit.SetText(myRule.IcmpType)
+    editRuleIcmpCodeLineEdit.SetText(myRule.IcmpCode)
+    editRuleIpProtoLineEdit.SetText(myRule.ProtoNumber)
+    editRulePortLineEdit.SetText(myRule.Port)
+    editRuleSrcPortLineEdit.SetText(myRule.SrcPort)
+    editRuleDstPortLineEdit.SetText(myRule.DstPort)
+    editRuleTcpFlagFilterLine.SetText(myRule.TcpFlags)
+    editRuleLenLineEdit.SetText(myRule.PacketLen)
+    editRuleDscpLineEdit.SetText(myRule.Dscp)
+    editRuleFragFilterLine.SetText(myRule.IpFrag)
+}
+
+func fullfilBgpFsWithLineEdit(myIndex int) {
+    BgpFsActivLib[myIndex].SrcPrefix = editRuleSrcPrefixLineEdit.Text()
+    BgpFsActivLib[myIndex].DstPrefix =  editRuleDstPrefixLineEdit.Text()
+    BgpFsActivLib[myIndex].IcmpType = editRuleIcmpTypeLineEdit.Text()
+    BgpFsActivLib[myIndex].IcmpCode = editRuleIcmpCodeLineEdit.Text()
+    BgpFsActivLib[myIndex].ProtoNumber = editRuleIpProtoLineEdit.Text()
+    BgpFsActivLib[myIndex].Port = editRulePortLineEdit.Text()
+    BgpFsActivLib[myIndex].SrcPort = editRuleSrcPortLineEdit.Text()
+    BgpFsActivLib[myIndex].DstPort = editRuleDstPortLineEdit.Text()
+    BgpFsActivLib[myIndex].TcpFlags = editRuleTcpFlagFilterLine.Text()
+    BgpFsActivLib[myIndex].PacketLen = editRuleLenLineEdit.Text()
+    BgpFsActivLib[myIndex].Dscp = editRuleDscpLineEdit.Text()
+    BgpFsActivLib[myIndex].IpFrag = editRuleFragFilterLine.Text()
+}
+
+// fucntion when an lib item is clicked
+
 func editRuleLibItemSelected(myItem *widgets.QTreeWidgetItem, column int) {
-    fmt.Printf("coucou\n")
+    index := editRuleTree.IndexOfTopLevelItem(myItem)
+    fullfilLineEditWithBgpFs(BgpFsActivLib[index])
+}
+
+// function to manage glob push button
+
+func editGlobButtonNewFunc() {
+    fmt.Printf("New button\n")
+}
+
+func editGlobButtonApplyFunc() {
+    fmt.Printf("Apply button\n")
+}
+
+func editGlobButtonDeleteFunc() {
+    fmt.Printf("Delete button\n")
+}
+
+func editGlobButtonResetFunc() {
+    fmt.Printf("Reset button\n")
 }
