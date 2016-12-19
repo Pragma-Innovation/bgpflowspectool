@@ -263,33 +263,31 @@ func flowspecWin() {
 
     // Flowspec main window
     var flowspecWindow = widgets.NewQMainWindow(nil, 0)
-    flowspecWindow.Layout().DestroyQObject()
+//    flowspecWindow.Layout().DestroyQObject()
+    var flowspecCentralWid = widgets.NewQWidget(nil, 0)
     flowspecWindow.SetGeometry(core.NewQRect4(100, 100, 1000, 800))
     flowspecWindow.SetWindowTitle("Flowspec Configuration")
     var flowspecWindowLayout = widgets.NewQVBoxLayout()
     flowspecWindowLayout.SetSpacing(6)
     flowspecWindowLayout.SetContentsMargins(11, 11, 11, 11)
-    flowspecWindow.SetLayout(flowspecWindowLayout)
+    flowspecCentralWid.SetLayout(flowspecWindowLayout)
 
-    // create two frames, one to host flwospec rule config
-    // and another one to manage flowspec FIB towards GoBGP
+    // create one frame and a dock, frame to host flwospec rule config
+    // and a dock to manage flowspec Rib towards GoBGP
     var editRuleFrame = widgets.NewQFrame(flowspecWindow, 0)
-    var ribManipFrame = widgets.NewQFrame(flowspecWindow, 0)
+
     editRuleFrame.SetSizePolicy(preferredSizePolicy)
-    ribManipFrame.SetSizePolicy(preferredSizePolicy)
+
     editRuleFrame.SetFrameShape(widgets.QFrame__Panel)
     editRuleFrame.SetFrameShadow(widgets.QFrame__Raised)
-    ribManipFrame.SetFrameShape(widgets.QFrame__Panel)
-    ribManipFrame.SetFrameShadow(widgets.QFrame__Raised)
     flowspecWindowLayout.AddWidget(editRuleFrame, 0, 0)
-    flowspecWindowLayout.AddWidget(ribManipFrame, 0, 0)
+
     var editRuleFrameLayout = widgets.NewQHBoxLayout()
-    var ribManipFrameLayout = widgets.NewQHBoxLayout()
     editRuleFrame.SetLayout(editRuleFrameLayout)
-    ribManipFrame.SetLayout(ribManipFrameLayout)
+
 
     // Create content of editRuleFrame
-    // Widget for table that display library
+    // Widget for Tree that displays library
     var editRuleLibWid = widgets.NewQWidget(editRuleFrame, 0)
     editRuleLibWid.SetSizePolicy(preferredSizePolicy)
     editRuleFrameLayout.AddWidget(editRuleLibWid, 0, 0)
@@ -308,12 +306,31 @@ func flowspecWin() {
         editRuleTreeHeaderItem.SetText(i, myLabel)
     }
     fullfilTreeWithRuleLib(editRuleTree, BgpFsActivLib)
+    var editRuleLibButtonFrame = widgets.NewQFrame(editRuleLibWid, 0)
+    editRuleLibButtonFrame.SetFrameShape(widgets.QFrame__Panel)
+    editRuleLibButtonFrame.SetFrameShadow(widgets.QFrame__Raised)
+    editRuleLibWidLayout.AddWidget(editRuleLibButtonFrame, 0, 0)
+    var editRuleLibButtonFrameLayout = widgets.NewQGridLayout2()
+    editRuleLibButtonFrame.SetLayout(editRuleLibButtonFrameLayout)
+    var (
+        editRuleLibSaveButton = widgets.NewQPushButton2("Save library", editRuleLibButtonFrame)
+        editRuleLibLoadButton = widgets.NewQPushButton2("Load library", editRuleLibButtonFrame)
+        editRuleLibPushRibButton = widgets.NewQPushButton2("Push rule to BGP Rib", editRuleLibButtonFrame)
+        editRuleLibConfRibButton = widgets.NewQPushButton2("Configure Rib", editRuleLibButtonFrame)
+    )
+    editRuleLibButtonFrameLayout.AddWidget(editRuleLibLoadButton, 0, 0, 0)
+    editRuleLibButtonFrameLayout.AddWidget(editRuleLibSaveButton, 0, 1, 0)
+    editRuleLibButtonFrameLayout.AddWidget(editRuleLibPushRibButton, 0, 2, 0)
+    editRuleLibButtonFrameLayout.AddWidget(editRuleLibConfRibButton, 0, 3, 0)
+
+    // var editRuleLibWidSpacer = widgets.NewQSpacerItem(20, 40, widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Fixed)
+    // editRuleLibButtonFrameLayout.AddItem(editRuleLibWidSpacer)
 
     // Edit rule widget creation: it includes all required
     // UI Widget to edit a BGP flowspec rule
     var editRuleMainWid = widgets.NewQWidget(editRuleFrame, 0)
     editRuleMainWid.SetSizePolicy(preferredSizePolicy)
-    editRuleFrameLayout.AddWidget(editRuleMainWid, 0, 0)
+    editRuleFrameLayout.AddWidget(editRuleMainWid, 0, core.Qt__AlignLeft)
     var editRuleMainWidLayout = widgets.NewQVBoxLayout()
     editRuleMainWid.SetLayout(editRuleMainWidLayout)
     // Editing widets of Edit Match filter
@@ -336,11 +353,11 @@ func flowspecWin() {
     editRuleSrcPrefixLineEdit.SetPlaceholderText("1.1.1.1/32")
     editRuleDstPrefixLineEdit.SetPlaceholderText("2.2.2.2/24")
     editAddrFamIpv4.SetChecked(true)
-    editRulePrefixLayout.AddWidget(editRuleSrcPrefixLabel, 0, 0, 0)
-    editRulePrefixLayout.AddWidget(editRuleSrcPrefixLineEdit, 0, 1, 0)
+    editRulePrefixLayout.AddWidget(editRuleSrcPrefixLabel, 1, 0, 0)
+    editRulePrefixLayout.AddWidget(editRuleSrcPrefixLineEdit, 1, 1, 0)
     editRulePrefixLayout.AddWidget(editAddrFamIpv4, 0, 2, 0)
-    editRulePrefixLayout.AddWidget(editRuleDstPrefixLabel, 1, 0, 0)
-    editRulePrefixLayout.AddWidget(editRuleDstPrefixLineEdit, 1, 1, 0)
+    editRulePrefixLayout.AddWidget(editRuleDstPrefixLabel, 0, 0, 0)
+    editRulePrefixLayout.AddWidget(editRuleDstPrefixLineEdit, 0, 1, 0)
     editRulePrefixLayout.AddWidget(editAddrFamIpv6, 1, 2, 0)
     // horizontal widget to group together ICMP and proto type
     var editRuleIcmpProtoWid = widgets.NewQWidget(editRuleMainWid, 0)
@@ -385,8 +402,8 @@ func flowspecWin() {
     editRulePortGroupBox.SetLayout(editRulePortLayout)
     var (
         editRulePortLabel = widgets.NewQLabel2("Port:", editRulePortGroupBox, 0)
-        editRuleSrcPortLabel = widgets.NewQLabel2("Source Port:", editRulePortGroupBox, 0)
-        editRuleDstPortLabel = widgets.NewQLabel2("Destination Port:", editRulePortGroupBox, 0)
+        editRuleSrcPortLabel = widgets.NewQLabel2("Src Port:", editRulePortGroupBox, 0)
+        editRuleDstPortLabel = widgets.NewQLabel2("Dst Port:", editRulePortGroupBox, 0)
     )
     editRulePortLineEdit = widgets.NewQLineEdit(nil)
     editRuleSrcPortLineEdit = widgets.NewQLineEdit(nil)
@@ -526,8 +543,8 @@ func flowspecWin() {
     editRuleGlobButtonlayout.AddWidget(editGlobButtonReset, 0, 2, 0)
     editRuleGlobButtonlayout.AddWidget(editGlobButtonDelete, 0, 3, 0)
 
-    var editRuleMainWidSpacer = widgets.NewQSpacerItem(20, 40, widgets.QSizePolicy__Fixed, widgets.QSizePolicy__Expanding)
-    editRuleMainWidLayout.AddItem(editRuleMainWidSpacer)
+    // var editRuleMainWidSpacer = widgets.NewQSpacerItem(20, 40, widgets.QSizePolicy__Fixed, widgets.QSizePolicy__Expanding)
+    // editRuleMainWidLayout.AddItem(editRuleMainWidSpacer)
     // Connection of all widget to QT slots and actions
     // Tree Widget
     editRuleTree.ConnectItemClicked(editRuleLibItemSelected)
@@ -538,12 +555,28 @@ func flowspecWin() {
     editGlobButtonDelete.ConnectClicked(func(_ bool) { editGlobButtonDeleteFunc() })
     editGlobButtonReset.ConnectClicked(func(_ bool) { editGlobButtonResetFunc() })
 
+    // widget of the Rib tool dock
+    var ribManipDock = widgets.NewQDockWidget("FlowSpec RIB tool", flowspecWindow, 0)
+    // ribManipDock.SetSizePolicy(preferredSizePolicy)
+    // flowspecWindowLayout.AddWidget(ribManipDock, 0, 0)
+    flowspecWindow.AddDockWidget(core.Qt__BottomDockWidgetArea, ribManipDock)
+    // main widget
+    var ribManipDockWid = widgets.NewQWidget(nil, 0)
+    var ribManipDockWidLayout = widgets.NewQHBoxLayout()
+    ribManipDockWid.SetLayout(ribManipDockWidLayout)
+    // Tree displaying BGP FS RIB
+    var ribContentTree = widgets.NewQTreeWidget(ribManipDockWid)
+    ribContentTree.SetSizePolicy(expandingSizePolicy)
+    ribManipDockWidLayout.AddWidget(ribContentTree, 0, 0)
+
+    ribManipDock.SetWidget(ribManipDockWid)
+    flowspecWindow.SetCentralWidget(flowspecCentralWid)
     flowspecWindow.Show()
 }
 
 // Copy the content of a flowspec rule structure into a TreeItem widget
 
-func fullfilItemWithRule(ty int, myTree *widgets.QTreeWidget, myRule BgpFsRule) {
+func createFullfilItemWithRule(ty int, myTree *widgets.QTreeWidget, myRule BgpFsRule) {
     var myItem = widgets.NewQTreeWidgetItem3(myTree, ty)
     myItem.SetText(0, myRule.DstPrefix)
     myItem.SetText(1, myRule.SrcPrefix)
@@ -560,10 +593,25 @@ func fullfilItemWithRule(ty int, myTree *widgets.QTreeWidget, myRule BgpFsRule) 
     myItem.SetText(12, myRule.Action)
 }
 
+func fullfilItemWithRule(ty int, myItem *widgets.QTreeWidgetItem, myRule BgpFsRule) {
+    myItem.SetText(0, myRule.DstPrefix)
+    myItem.SetText(1, myRule.SrcPrefix)
+    myItem.SetText(2, myRule.Port)
+    myItem.SetText(3, myRule.SrcPort)
+    myItem.SetText(4, myRule.DstPort)
+    myItem.SetText(5, myRule.TcpFlags)
+    myItem.SetText(6, myRule.IcmpType)
+    myItem.SetText(7, myRule.IcmpCode)
+    myItem.SetText(8, myRule.ProtoNumber)
+    myItem.SetText(9, myRule.PacketLen)
+    myItem.SetText(10, myRule.Dscp)
+    myItem.SetText(11, myRule.IpFrag)
+    myItem.SetText(12, myRule.Action)
+}
 
 func fullfilTreeWithRuleLib(myTree *widgets.QTreeWidget, myRuleLib []BgpFsRule) {
     for i, myRule := range myRuleLib {
-        fullfilItemWithRule(i, myTree, myRule)
+        createFullfilItemWithRule(i, myTree, myRule)
     }
 }
 
@@ -607,15 +655,29 @@ func editRuleLibItemSelected(myItem *widgets.QTreeWidgetItem, column int) {
 // function to manage glob push button
 
 func editGlobButtonNewFunc() {
-    fmt.Printf("New button\n")
+    var myFsRule BgpFsRule
+    myFsRule.DstPrefix = "New"
+    BgpFsActivLib = append(BgpFsActivLib, myFsRule)
+    createFullfilItemWithRule(len(BgpFsActivLib)-1, editRuleTree, BgpFsActivLib[len(BgpFsActivLib)-1])
 }
 
 func editGlobButtonApplyFunc() {
-    fmt.Printf("Apply button\n")
+    var myItem *widgets.QTreeWidgetItem
+    myItem = editRuleTree.CurrentItem()
+    index := editRuleTree.IndexOfTopLevelItem(myItem)
+    fullfilBgpFsWithLineEdit(index)
+    fullfilItemWithRule(index, myItem, BgpFsActivLib[index])
 }
 
 func editGlobButtonDeleteFunc() {
-    fmt.Printf("Delete button\n")
+    var myItem *widgets.QTreeWidgetItem
+    myItem = editRuleTree.CurrentItem()
+    index := editRuleTree.IndexOfTopLevelItem(myItem)
+     if(index >= 0 && index < editRuleTree.TopLevelItemCount()) {
+        myItem = editRuleTree.TakeTopLevelItem(index)
+     }
+    fmt.Printf("index: %d\n", index)
+    BgpFsActivLib = append(BgpFsActivLib[:index], BgpFsActivLib[index+1:]...)
 }
 
 func editGlobButtonResetFunc() {
