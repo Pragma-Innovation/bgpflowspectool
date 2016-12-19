@@ -64,12 +64,23 @@ var (
     editRuleDscpLineEdit *widgets.QLineEdit
     editRuleFragFilterLine *widgets.QLineEdit
     editRuleTree *widgets.QTreeWidget
+    consoleWindow *widgets.QMainWindow
+    flowspecWindow *widgets.QMainWindow
 )
 
 
 var client api.GobgpApiClient
 
+var (
+    windowFlowSpecCreated bool
+    windowBgpConsoleCreated bool
+)
+
 func main() {
+    // initialise boolean that tell us if sub-windows is already reated
+    windowFlowSpecCreated = false
+    windowBgpConsoleCreated = false
+
     // launch gobgp API client
     timeout := grpc.WithTimeout(time.Second)
     conn, rpcErr := grpc.Dial("localhost:50051", timeout, grpc.WithBlock(), grpc.WithInsecure())
@@ -113,11 +124,23 @@ func main() {
 }
 
 func dockConsolButtonClicked() {
-    consoleWin()
+    if(windowBgpConsoleCreated) {
+        consoleWindow.Raise()
+
+    } else {
+        consoleWin()
+        windowBgpConsoleCreated = true
+    }
 }
 
 func dockFspecButtonPushed() {
-    flowspecWin()
+    if(windowFlowSpecCreated) {
+        flowspecWindow.Raise()
+    } else {
+        flowspecWin()
+        windowFlowSpecCreated = true
+    }
+
 }
 
 
@@ -126,7 +149,7 @@ func dockFspecButtonPushed() {
 
 func consoleWin() {
 
-    var consoleWindow = widgets.NewQMainWindow(nil, 0)
+    consoleWindow = widgets.NewQMainWindow(nil, 0)
     consoleWindow.Layout().DestroyQObject()
     consoleWindow.SetGeometry(core.NewQRect4(100, 100, 1000, 600))
     consoleWindow.SetWindowTitle("GoBGP Console")
@@ -223,10 +246,13 @@ func consoleWin() {
     cmdNeighButton.ConnectClicked(func(_ bool) { cmdNeighButtonClicked(logText) })
     cmdFsrib4Button.ConnectClicked(func(_ bool) { cmdFsrib4ButtonClicked(logText) })
     cmdFsrib6Button.ConnectClicked(func(_ bool) { cmdFsrib6ButtonClicked(logText) })
-
+    consoleWindow.ConnectCloseEvent(consoleWindowClosed)
     consoleWindow.Show()
 }
 
+func consoleWindowClosed(event *gui.QCloseEvent){
+    windowBgpConsoleCreated = false
+}
 
 func cmdNeighButtonClicked(logTextWidget *widgets.QTextEdit) {
     dumpNeigh := gobgpclient.TxtdumpGetNeighbor(client)
@@ -262,7 +288,7 @@ func flowspecWin() {
     preferredSizePolicy.SetVerticalStretch(0)
 
     // Flowspec main window
-    var flowspecWindow = widgets.NewQMainWindow(nil, 0)
+    flowspecWindow = widgets.NewQMainWindow(nil, 0)
 //    flowspecWindow.Layout().DestroyQObject()
     var flowspecCentralWid = widgets.NewQWidget(nil, 0)
     flowspecWindow.SetGeometry(core.NewQRect4(100, 100, 1000, 800))
@@ -568,10 +594,32 @@ func flowspecWin() {
     var ribContentTree = widgets.NewQTreeWidget(ribManipDockWid)
     ribContentTree.SetSizePolicy(expandingSizePolicy)
     ribManipDockWidLayout.AddWidget(ribContentTree, 0, 0)
+    // Buttons for rib manip
+    var ribManipButtonWid = widgets.NewQWidget(ribManipDockWid, 0)
+    var ribManipButtonWidLayout = widgets.NewQGridLayout2()
+    ribManipButtonWid.SetLayout(ribManipButtonWidLayout)
+    var (
+        ribManipLoadButton = widgets.NewQPushButton2("Load/Reload BGP FS RIB", ribManipButtonWid)
+        ribManipPushButton = widgets.NewQPushButton2("Push updates to RIB", ribManipButtonWid)
+        ribManipAddRuleButton = widgets.NewQPushButton2("Add rule from Library", ribManipButtonWid)
+        ribManipDeleteRuleButton = widgets.NewQPushButton2("Delete rule from RIB", ribManipButtonWid)
+    )
+    ribManipButtonWidLayout.AddWidget(ribManipLoadButton, 0, 0, 0)
+    ribManipButtonWidLayout.AddWidget(ribManipPushButton, 1, 0, 0)
+    ribManipButtonWidLayout.AddWidget(ribManipAddRuleButton, 2, 0, 0)
+    ribManipButtonWidLayout.AddWidget(ribManipDeleteRuleButton, 3, 0, 0)
+    ribManipDockWidLayout.AddWidget(ribManipButtonWid, 0, 0)
 
     ribManipDock.SetWidget(ribManipDockWid)
+
     flowspecWindow.SetCentralWidget(flowspecCentralWid)
+    flowspecWindow.ConnectCloseEvent(flowspecWindowClosed)
+
     flowspecWindow.Show()
+}
+
+func flowspecWindowClosed(event *gui.QCloseEvent){
+    windowFlowSpecCreated = false
 }
 
 // Copy the content of a flowspec rule structure into a TreeItem widget
