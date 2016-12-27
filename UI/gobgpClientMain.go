@@ -14,31 +14,12 @@ import (
    "github.com/therecipe/qt/gui"
    "github.com/therecipe/qt/widgets"
     api "github.com/osrg/gobgp/api"
-    "github.com/Matt-Texier/local-mitigation-agent/gobgpclient"
+    bgpcli "github.com/Matt-Texier/local-mitigation-agent/gobgpclient"
     "google.golang.org/grpc"
 )
 
-// data strcutures used by both API functions and UI
-// BGP flowspec update structure as exported from UI
 
-type BgpFsRule struct {
-    DstPrefix string
-    SrcPrefix string
-    AddrFam string
-    Port string
-    SrcPort string
-    DstPort string
-    TcpFlags string
-    IcmpType string
-    IcmpCode string
-    ProtoNumber string
-    PacketLen string
-    Dscp string
-    IpFrag string
-    Action string
-}
-
-var BgpFsActivLib = []BgpFsRule{
+var BgpFsActivLib = []bgpcli.BgpFsRule{
     {DstPrefix: "1.1.1.1/32", SrcPrefix: "2.2.2.2/32", AddrFam: "IPv4", Port: "8080",
      SrcPort: "80", DstPort: "443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "6",
      PacketLen: "1024", Dscp: "22", IpFrag: "", Action: "",},
@@ -255,7 +236,7 @@ func consoleWindowClosed(event *gui.QCloseEvent){
 }
 
 func cmdNeighButtonClicked(logTextWidget *widgets.QTextEdit) {
-    dumpNeigh := gobgpclient.TxtdumpGetNeighbor(client)
+    dumpNeigh := bgpcli.TxtdumpGetNeighbor(client)
 
     for _, p := range dumpNeigh {
         logTextWidget.InsertPlainText(p)
@@ -594,6 +575,12 @@ func flowspecWin() {
     var ribContentTree = widgets.NewQTreeWidget(ribManipDockWid)
     ribContentTree.SetSizePolicy(expandingSizePolicy)
     ribManipDockWidLayout.AddWidget(ribContentTree, 0, 0)
+    ribContentTree.SetColumnCount(3)
+    var ribContentTreeHeaderItem = ribContentTree.HeaderItem()
+    ribHeaderLabels := []string{"NLRI", "Next Hop", "Extended community"}
+    for i, myLabel := range ribHeaderLabels {
+        ribContentTreeHeaderItem.SetText(i, myLabel)
+    }
     // Buttons for rib manip
     var ribManipButtonWid = widgets.NewQWidget(ribManipDockWid, 0)
     var ribManipButtonWidLayout = widgets.NewQGridLayout2()
@@ -610,6 +597,9 @@ func flowspecWin() {
     ribManipButtonWidLayout.AddWidget(ribManipDeleteRuleButton, 3, 0, 0)
     ribManipDockWidLayout.AddWidget(ribManipButtonWid, 0, 0)
 
+    // wire push buttons
+    ribManipLoadButton.ConnectClicked(func(_ bool) { ribManipLoadRibFunc(ribContentTree) })
+
     ribManipDock.SetWidget(ribManipDockWid)
 
     flowspecWindow.SetCentralWidget(flowspecCentralWid)
@@ -618,13 +608,21 @@ func flowspecWin() {
     flowspecWindow.Show()
 }
 
+// function called when load rib button clicked
+
+func ribManipLoadRibFunc(myTree *widgets.QTreeWidget) {
+    bgpcli.FlowSpecRibToRibRules(client)
+}
+
+// function called when window get closed
+
 func flowspecWindowClosed(event *gui.QCloseEvent){
     windowFlowSpecCreated = false
 }
 
 // Copy the content of a flowspec rule structure into a TreeItem widget
 
-func createFullfilItemWithRule(ty int, myTree *widgets.QTreeWidget, myRule BgpFsRule) {
+func createFullfilItemWithRule(ty int, myTree *widgets.QTreeWidget, myRule bgpcli.BgpFsRule) {
     var myItem = widgets.NewQTreeWidgetItem3(myTree, ty)
     myItem.SetText(0, myRule.DstPrefix)
     myItem.SetText(1, myRule.SrcPrefix)
@@ -641,7 +639,7 @@ func createFullfilItemWithRule(ty int, myTree *widgets.QTreeWidget, myRule BgpFs
     myItem.SetText(12, myRule.Action)
 }
 
-func fullfilItemWithRule(ty int, myItem *widgets.QTreeWidgetItem, myRule BgpFsRule) {
+func fullfilItemWithRule(ty int, myItem *widgets.QTreeWidgetItem, myRule bgpcli.BgpFsRule) {
     myItem.SetText(0, myRule.DstPrefix)
     myItem.SetText(1, myRule.SrcPrefix)
     myItem.SetText(2, myRule.Port)
@@ -657,13 +655,13 @@ func fullfilItemWithRule(ty int, myItem *widgets.QTreeWidgetItem, myRule BgpFsRu
     myItem.SetText(12, myRule.Action)
 }
 
-func fullfilTreeWithRuleLib(myTree *widgets.QTreeWidget, myRuleLib []BgpFsRule) {
+func fullfilTreeWithRuleLib(myTree *widgets.QTreeWidget, myRuleLib []bgpcli.BgpFsRule) {
     for i, myRule := range myRuleLib {
         createFullfilItemWithRule(i, myTree, myRule)
     }
 }
 
-func fullfilLineEditWithBgpFs(myRule BgpFsRule) {
+func fullfilLineEditWithBgpFs(myRule bgpcli.BgpFsRule) {
     editRuleSrcPrefixLineEdit.SetText(myRule.SrcPrefix)
     editRuleDstPrefixLineEdit.SetText(myRule.DstPrefix)
     editRuleIcmpTypeLineEdit.SetText(myRule.IcmpType)
@@ -703,7 +701,7 @@ func editRuleLibItemSelected(myItem *widgets.QTreeWidgetItem, column int) {
 // function to manage glob push button
 
 func editGlobButtonNewFunc() {
-    var myFsRule BgpFsRule
+    var myFsRule bgpcli.BgpFsRule
     myFsRule.DstPrefix = "New"
     BgpFsActivLib = append(BgpFsActivLib, myFsRule)
     createFullfilItemWithRule(len(BgpFsActivLib)-1, editRuleTree, BgpFsActivLib[len(BgpFsActivLib)-1])
