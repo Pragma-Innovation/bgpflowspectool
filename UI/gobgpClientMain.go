@@ -73,38 +73,38 @@ func main() {
     client = api.NewGobgpApiClient(conn)
 
     widgets.NewQApplication(len(os.Args), os.Args)
-    var dockWindow = widgets.NewQMainWindow(nil, 0)
-    dockWindow.Layout().DestroyQObject()
-    dockWindow.SetGeometry(core.NewQRect4(100, 100, 400, 50))
-    dockWindow.SetWindowTitle("Gabu")
-    var dockMainLayout = widgets.NewQHBoxLayout()
-    dockMainLayout.SetSpacing(6)
-    dockMainLayout.SetContentsMargins(11, 11, 11, 11)
-    dockWindow.SetLayout(dockMainLayout)
-    // main window "dock" push button
-    var dockConsolePush = widgets.NewQPushButton2("GoBgp Console", dockWindow)
-    var dockFlowSpecPush = widgets.NewQPushButton2("FlowSpec RIB", dockWindow)
+    var toolbarWindow = widgets.NewQMainWindow(nil, 0)
+    toolbarWindow.Layout().DestroyQObject()
+    toolbarWindow.SetGeometry(core.NewQRect4(100, 100, 400, 50))
+    toolbarWindow.SetWindowTitle("Gabu")
+    var toolbarMainLayout = widgets.NewQHBoxLayout()
+    toolbarMainLayout.SetSpacing(6)
+    toolbarMainLayout.SetContentsMargins(11, 11, 11, 11)
+    toolbarWindow.SetLayout(toolbarMainLayout)
+    // main window "toolbar" push button
+    var toolbarConsolePush = widgets.NewQPushButton2("GoBgp Console", toolbarWindow)
+    var toolbarFlowSpecPush = widgets.NewQPushButton2("FlowSpec RIB", toolbarWindow)
 
-    var dockButtonSizePolicy = widgets.NewQSizePolicy()
-    dockButtonSizePolicy.SetHorizontalPolicy(widgets.QSizePolicy__Expanding)
-    dockButtonSizePolicy.SetVerticalPolicy(widgets.QSizePolicy__Expanding)
-    dockButtonSizePolicy.SetHorizontalStretch(0)
-    dockButtonSizePolicy.SetVerticalStretch(0)
-    dockConsolePush.SetSizePolicy(dockButtonSizePolicy)
-    dockFlowSpecPush.SetSizePolicy(dockButtonSizePolicy)
+    var toolbarButtonSizePolicy = widgets.NewQSizePolicy()
+    toolbarButtonSizePolicy.SetHorizontalPolicy(widgets.QSizePolicy__Expanding)
+    toolbarButtonSizePolicy.SetVerticalPolicy(widgets.QSizePolicy__Expanding)
+    toolbarButtonSizePolicy.SetHorizontalStretch(0)
+    toolbarButtonSizePolicy.SetVerticalStretch(0)
+    toolbarConsolePush.SetSizePolicy(toolbarButtonSizePolicy)
+    toolbarFlowSpecPush.SetSizePolicy(toolbarButtonSizePolicy)
 
     // Connect buttons to functions
-    dockConsolePush.ConnectClicked(func(_ bool) { dockConsolButtonClicked() })
-    dockFlowSpecPush.ConnectClicked(func(_ bool) { dockFspecButtonPushed() })
+    toolbarConsolePush.ConnectClicked(func(_ bool) { toolbarConsolButtonClicked() })
+    toolbarFlowSpecPush.ConnectClicked(func(_ bool) { toolbarFspecButtonPushed() })
     // add button to main layout
-    dockMainLayout.AddWidget(dockConsolePush, 0, 0)
-    dockMainLayout.AddWidget(dockFlowSpecPush, 0, 0)
-    dockWindow.Show()
+    toolbarMainLayout.AddWidget(toolbarConsolePush, 0, 0)
+    toolbarMainLayout.AddWidget(toolbarFlowSpecPush, 0, 0)
+    toolbarWindow.Show()
     widgets.QApplication_Exec()
 
 }
 
-func dockConsolButtonClicked() {
+func toolbarConsolButtonClicked() {
     if(windowBgpConsoleCreated) {
         consoleWindow.Raise()
 
@@ -114,7 +114,7 @@ func dockConsolButtonClicked() {
     }
 }
 
-func dockFspecButtonPushed() {
+func toolbarFspecButtonPushed() {
     if(windowFlowSpecCreated) {
         flowspecWindow.Raise()
     } else {
@@ -312,6 +312,7 @@ func flowspecWin() {
     for i, myLabel := range libHeaderLabels {
         editRuleTreeHeaderItem.SetText(i, myLabel)
     }
+    editRuleTree.Header().SetSectionResizeMode(widgets.QHeaderView__ResizeToContents)
     fullfilTreeWithRuleLib(editRuleTree, BgpFsActivLib)
     var editRuleLibButtonFrame = widgets.NewQFrame(editRuleLibWid, 0)
     editRuleLibButtonFrame.SetFrameShape(widgets.QFrame__Panel)
@@ -323,12 +324,10 @@ func flowspecWin() {
         editRuleLibSaveButton = widgets.NewQPushButton2("Save library", editRuleLibButtonFrame)
         editRuleLibLoadButton = widgets.NewQPushButton2("Load library", editRuleLibButtonFrame)
         editRuleLibPushRibButton = widgets.NewQPushButton2("Push rule to BGP Rib", editRuleLibButtonFrame)
-        editRuleLibConfRibButton = widgets.NewQPushButton2("Configure Rib", editRuleLibButtonFrame)
     )
     editRuleLibButtonFrameLayout.AddWidget(editRuleLibLoadButton, 0, 0, 0)
     editRuleLibButtonFrameLayout.AddWidget(editRuleLibSaveButton, 0, 1, 0)
     editRuleLibButtonFrameLayout.AddWidget(editRuleLibPushRibButton, 0, 2, 0)
-    editRuleLibButtonFrameLayout.AddWidget(editRuleLibConfRibButton, 0, 3, 0)
 
     // var editRuleLibWidSpacer = widgets.NewQSpacerItem(20, 40, widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Fixed)
     // editRuleLibButtonFrameLayout.AddItem(editRuleLibWidSpacer)
@@ -575,9 +574,10 @@ func flowspecWin() {
     var ribContentTree = widgets.NewQTreeWidget(ribManipDockWid)
     ribContentTree.SetSizePolicy(expandingSizePolicy)
     ribManipDockWidLayout.AddWidget(ribContentTree, 0, 0)
-    ribContentTree.SetColumnCount(3)
+    ribContentTree.SetColumnCount(4)
+    ribContentTree.Header().SetSectionResizeMode(widgets.QHeaderView__ResizeToContents)
     var ribContentTreeHeaderItem = ribContentTree.HeaderItem()
-    ribHeaderLabels := []string{"NLRI", "Next Hop", "Extended community"}
+    ribHeaderLabels := []string{"NLRI", "Extended community", "Age", "Next Hop"}
     for i, myLabel := range ribHeaderLabels {
         ribContentTreeHeaderItem.SetText(i, myLabel)
     }
@@ -587,37 +587,36 @@ func flowspecWin() {
     ribManipButtonWid.SetLayout(ribManipButtonWidLayout)
     var (
         ribManipLoadButton = widgets.NewQPushButton2("Load/Reload BGP FS RIB", ribManipButtonWid)
-        ribManipPushButton = widgets.NewQPushButton2("Push updates to RIB", ribManipButtonWid)
-        ribManipAddRuleButton = widgets.NewQPushButton2("Add rule from Library", ribManipButtonWid)
         ribManipDeleteRuleButton = widgets.NewQPushButton2("Delete rule from RIB", ribManipButtonWid)
     )
     ribManipButtonWidLayout.AddWidget(ribManipLoadButton, 0, 0, 0)
-    ribManipButtonWidLayout.AddWidget(ribManipPushButton, 1, 0, 0)
-    ribManipButtonWidLayout.AddWidget(ribManipAddRuleButton, 2, 0, 0)
     ribManipButtonWidLayout.AddWidget(ribManipDeleteRuleButton, 3, 0, 0)
     ribManipDockWidLayout.AddWidget(ribManipButtonWid, 0, 0)
 
-    // wire push buttons
-    ribManipLoadButton.ConnectClicked(func(_ bool) { ribManipLoadRibFunc(ribContentTree) })
+    // wire push buttons of the dock
+    ribManipLoadButton.ConnectClicked(func(_ bool) {ribManipLoadRibFunc(ribContentTree)})
 
     ribManipDock.SetWidget(ribManipDockWid)
+    ribManipDock.SetFeatures(widgets.QDockWidget__DockWidgetFloatable | widgets.QDockWidget__DockWidgetMovable)
 
     flowspecWindow.SetCentralWidget(flowspecCentralWid)
-    flowspecWindow.ConnectCloseEvent(flowspecWindowClosed)
+    flowspecWindow.ConnectCloseEvent(func (myCloseEvent *gui.QCloseEvent) {flowspecWindowClosed(myCloseEvent, ribManipDock)})
 
     flowspecWindow.Show()
 }
 
+
 // function called when load rib button clicked
 
 func ribManipLoadRibFunc(myTree *widgets.QTreeWidget) {
-    bgpcli.FlowSpecRibToRibRules(client)
+    bgpcli.FlowSpecRibFulfillTree(client, myTree)
 }
 
 // function called when window get closed
 
-func flowspecWindowClosed(event *gui.QCloseEvent){
+func flowspecWindowClosed(event *gui.QCloseEvent, myDock *widgets.QDockWidget){
     windowFlowSpecCreated = false
+    flowspecWindow.RemoveDockWidget(myDock)
 }
 
 // Copy the content of a flowspec rule structure into a TreeItem widget
@@ -722,7 +721,7 @@ func editGlobButtonDeleteFunc() {
      if(index >= 0 && index < editRuleTree.TopLevelItemCount()) {
         myItem = editRuleTree.TakeTopLevelItem(index)
      }
-    fmt.Printf("index: %d\n", index)
+    // fmt.Printf("index: %d\n", index)
     BgpFsActivLib = append(BgpFsActivLib[:index], BgpFsActivLib[index+1:]...)
 }
 

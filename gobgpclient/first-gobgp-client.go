@@ -7,7 +7,7 @@ import (
     "github.com/osrg/gobgp/packet/bgp"
     api "github.com/osrg/gobgp/api"
     "github.com/osrg/gobgp/table"
-    "github.com/osrg/gobgp/config"
+    "github.com/therecipe/qt/widgets"
 )
 
 // data strcutures used by both API functions and UI
@@ -126,8 +126,7 @@ func TxtdumpGetNeighbor(client api.GobgpApiClient) []string {
     return dumpResult
 }
 
-func FlowSpecRibToRibRules (client api.GobgpApiClient) (*[]BgpFsRule, error) {
-    var myRules []BgpFsRule
+func FlowSpecRibFulfillTree (client api.GobgpApiClient, myTree *widgets.QTreeWidget) {
     var dsts []*api.Destination
     var myNativeTable *table.Table
     resource := api.Resource_GLOBAL
@@ -142,34 +141,22 @@ func FlowSpecRibToRibRules (client api.GobgpApiClient) (*[]BgpFsRule, error) {
         },
     })
     if err != nil {
-        return nil, err
+        return
     }
     myNativeTable, err = res.Table.ToNativeTable()
-    fmt.Printf("Table: %v\n", myNativeTable)
 
-    counter := 0
     for _, d := range myNativeTable.GetSortedDestinations() {
         var ps []*table.Path
         ps = d.GetAllKnownPathList()
-        if counter == 0 {
-            showRouteToItem(ps, false, false, false, false, true)
-        } else {
-            showRouteToItem(ps, false, false, false, false, false)
-        }
-        counter++
+        showRouteToItem(ps, myTree)
     }
-
-    return &myRules, err
 }
 
 
-func showRouteToItem(pathList []*table.Path, showAge, showBest, showLabel, isMonitor, printHeader bool) {
+func showRouteToItem(pathList []*table.Path, myTree *widgets.QTreeWidget) {
 
-    var pathStrs [][]interface{}
-    maxPrefixLen := 20
+    maxPrefixLen := 50
     maxNexthopLen := 20
-    maxAsPathLen := 20
-    maxLabelLen := 10
 
     now := time.Now()
     for idx, p := range pathList {
@@ -177,7 +164,6 @@ func showRouteToItem(pathList []*table.Path, showAge, showBest, showLabel, isMon
         if n := p.GetNexthop(); n != nil {
             nexthop = p.GetNexthop().String()
         }
-        aspathstr := p.GetAsString()
 
         s := []string{}
         for _, a := range p.GetPathAttrs() {
@@ -194,98 +180,22 @@ func showRouteToItem(pathList []*table.Path, showAge, showBest, showLabel, isMon
             maxNexthopLen = len(nexthop)
         }
 
-        if maxAsPathLen < len(aspathstr) {
-            maxAsPathLen = len(aspathstr)
-        }
-
-        best := ""
-        if p.IsStale() {
-            best += "S"
-        }
-        switch p.Validation() {
-        case config.RPKI_VALIDATION_RESULT_TYPE_NOT_FOUND:
-            best += "N"
-        case config.RPKI_VALIDATION_RESULT_TYPE_VALID:
-            best += "V"
-        case config.RPKI_VALIDATION_RESULT_TYPE_INVALID:
-            best += "I"
-        }
-        if showBest {
-            if idx == 0 {
-                best += "*>"
-            } else {
-                best += "* "
-            }
-        }
         nlri := p.GetNlri()
+
         if maxPrefixLen < len(nlri.String()) {
             maxPrefixLen = len(nlri.String())
         }
 
-        if isMonitor {
-            title := "ROUTE"
-            if p.IsWithdraw {
-                title = "DELROUTE"
-            }
-            pathStrs = append(pathStrs, []interface{}{title, nlri, nexthop, aspathstr, pattrstr})
-        } else {
-            args := []interface{}{best, nlri}
-            if showLabel {
-                label := ""
-                switch nlri.(type) {
-                case *bgp.LabeledIPAddrPrefix:
-                    label = nlri.(*bgp.LabeledIPAddrPrefix).Labels.String()
-                case *bgp.LabeledIPv6AddrPrefix:
-                    label = nlri.(*bgp.LabeledIPv6AddrPrefix).Labels.String()
-                case *bgp.LabeledVPNIPAddrPrefix:
-                    label = nlri.(*bgp.LabeledVPNIPAddrPrefix).Labels.String()
-                case *bgp.LabeledVPNIPv6AddrPrefix:
-                    label = nlri.(*bgp.LabeledVPNIPv6AddrPrefix).Labels.String()
-                }
-                if maxLabelLen < len(label) {
-                    maxLabelLen = len(label)
-                }
-                args = append(args, label)
-            }
-            args = append(args, []interface{}{nexthop, aspathstr}...)
-            if showAge {
-                args = append(args, formatTimedelta(int64(now.Sub(p.GetTimestamp()).Seconds())))
-            }
-            args = append(args, pattrstr)
-            pathStrs = append(pathStrs, args)
-        }
-    }
-
-    var format string
-    if isMonitor {
-        format = "[%s] %s via %s aspath [%s] attrs %s\n"
-    } else {
-        format = fmt.Sprintf("%%-3s %%-%ds", maxPrefixLen)
-        if showLabel {
-            format += fmt.Sprintf("%%-%ds ", maxLabelLen)
-        }
-        format += fmt.Sprintf("%%-%ds %%-%ds ", maxNexthopLen, maxAsPathLen)
-        if showAge {
-            format += "%-10s "
-        }
-        format += "%-s\n"
-
-    }
-
-    if printHeader {
-        args := []interface{}{"", "Network"}
-        if showLabel {
-            args = append(args, "Labels")
-        }
-        args = append(args, []interface{}{"Next Hop", "AS_PATH"}...)
-        if showAge {
-            args = append(args, "Age")
-        }
-        args = append(args, "Attrs")
-        fmt.Printf(format, args...)
-    }
-
-    for _, pathStr := range pathStrs {
-        fmt.Printf(format, pathStr...)
+        age := formatTimedelta(int64(now.Sub(p.GetTimestamp()).Seconds()))
+        // fill up the tree with items
+        var myItem = widgets.NewQTreeWidgetItem3(myTree, idx)
+        myItem.SetText(0, nlri.String())
+        myItem.SetText(1, pattrstr)
+        myItem.SetText(2, age)
+        myItem.SetText(3, nexthop)
+        // fmt.Printf("nlri: %s\n", nlri)
+        // fmt.Printf("nexthop: %s\n", nexthop)
+        // fmt.Printf("pattrstr: %s\n", pattrstr)
+        // fmt.Printf("Age: %s\n", age)
     }
 }
