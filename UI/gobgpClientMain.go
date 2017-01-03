@@ -32,6 +32,8 @@ var BgpFsActivLib = []bgpcli.BgpFsRule{
 }
 
 var (
+    editAddrFamIpv4 *widgets.QRadioButton
+    editAddrFamIpv6 *widgets.QRadioButton
     editRuleSrcPrefixLineEdit *widgets.QLineEdit
     editRuleDstPrefixLineEdit *widgets.QLineEdit
     editRuleIcmpTypeLineEdit *widgets.QLineEdit
@@ -55,7 +57,17 @@ var client api.GobgpApiClient
 var (
     windowFlowSpecCreated bool
     windowBgpConsoleCreated bool
+    AddrFamilyIpv4Checked bool
+    AddrFamilyIpv6Checked bool
 )
+
+var regexpIpv4Validation *core.QRegExp
+var regexpIpv6Validation *core.QRegExp
+var regexpIpv4SrcValidator *gui.QRegExpValidator
+var regexpIpv4DstValidator *gui.QRegExpValidator
+var regexpIpv6SrcValidator *gui.QRegExpValidator
+var regexpIpv6DstValidator *gui.QRegExpValidator
+
 
 func main() {
     // initialise boolean that tell us if sub-windows is already reated
@@ -305,9 +317,9 @@ func flowspecWin() {
     editRuleTree.SetSizePolicy(expandingSizePolicy)
     editRuleLibWidLayout.AddWidget(editRuleLabel, 0, 0)
     editRuleLibWidLayout.AddWidget(editRuleTree, 0, 0)
-    editRuleTree.SetColumnCount(13)
+    editRuleTree.SetColumnCount(14)
     var editRuleTreeHeaderItem = editRuleTree.HeaderItem()
-    libHeaderLabels := []string{"Dst Prefix", "Src Prefix", "Port", "Src Port", "Dst Port", "TCP flags",
+    libHeaderLabels := []string{"Add Family", "Dst Prefix", "Src Prefix", "Port", "Src Port", "Dst Port", "TCP flags",
 "ICMP Type", "ICMP code", "Proto Number", "Packet Len", "DSCP", "IP Frag", "Action"}
     for i, myLabel := range libHeaderLabels {
         editRuleTreeHeaderItem.SetText(i, myLabel)
@@ -351,20 +363,32 @@ func flowspecWin() {
     var (
         editRuleSrcPrefixLabel = widgets.NewQLabel2("Source Prefix:", editRulePrefixGroupBox, 0)
         editRuleDstPrefixLabel = widgets.NewQLabel2("Destination Prefix:", editRulePrefixGroupBox, 0)
-        editAddrFamIpv4 = widgets.NewQRadioButton2("Flowspec IPv4", editRulePrefixGroupBox)
-        editAddrFamIpv6 = widgets.NewQRadioButton2("Flowspec IPv6", editRulePrefixGroupBox)
     )
+    editAddrFamIpv4 = widgets.NewQRadioButton2("Flowspec IPv4", editRulePrefixGroupBox)
+    editAddrFamIpv6 = widgets.NewQRadioButton2("Flowspec IPv6", editRulePrefixGroupBox)
     editRuleSrcPrefixLineEdit = widgets.NewQLineEdit(nil)
     editRuleDstPrefixLineEdit = widgets.NewQLineEdit(nil)
     editRuleSrcPrefixLineEdit.SetPlaceholderText("1.1.1.1/32")
     editRuleDstPrefixLineEdit.SetPlaceholderText("2.2.2.2/24")
     editAddrFamIpv4.SetChecked(true)
+    AddrFamilyIpv6Checked = false
+    AddrFamilyIpv4Checked = true
+    regexpIpv6Validation = core.NewQRegExp2("^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))(\\/((1(1[0-9]|2[0-8]))|([0-9][0-9])|([0-9])))?$", core.Qt__CaseInsensitive, core.QRegExp__RegExp2)
+    regexpIpv4Validation = core.NewQRegExp2("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$", core.Qt__CaseInsensitive, core.QRegExp__RegExp2)
+    regexpIpv4SrcValidator = gui.NewQRegExpValidator2(regexpIpv4Validation, editRuleSrcPrefixLineEdit)
+    regexpIpv4DstValidator = gui.NewQRegExpValidator2(regexpIpv4Validation, editRuleDstPrefixLineEdit)
+    editRuleSrcPrefixLineEdit.SetValidator(regexpIpv4SrcValidator)
+    editRuleDstPrefixLineEdit.SetValidator(regexpIpv4DstValidator)
     editRulePrefixLayout.AddWidget(editRuleSrcPrefixLabel, 1, 0, 0)
     editRulePrefixLayout.AddWidget(editRuleSrcPrefixLineEdit, 1, 1, 0)
     editRulePrefixLayout.AddWidget(editAddrFamIpv4, 0, 2, 0)
     editRulePrefixLayout.AddWidget(editRuleDstPrefixLabel, 0, 0, 0)
     editRulePrefixLayout.AddWidget(editRuleDstPrefixLineEdit, 0, 1, 0)
     editRulePrefixLayout.AddWidget(editAddrFamIpv6, 1, 2, 0)
+    // Wire address family radio button
+    editAddrFamIpv4.ConnectClicked(editAddrFamIpv4Func)
+    editAddrFamIpv6.ConnectClicked(editAddrFamIpv6Func)
+
     // horizontal widget to group together ICMP and proto type
     var editRuleIcmpProtoWid = widgets.NewQWidget(editRuleMainWid, 0)
     editRuleMainWidLayout.AddWidget(editRuleIcmpProtoWid, 0, 0)
@@ -401,9 +425,15 @@ func flowspecWin() {
     editRuleIpProtoLayout.AddWidget(editRuleIpProtoLabel, 0, 0, 0)
     editRuleIpProtoLayout.AddWidget(editRuleIpProtoLineEdit, 0, 1, 0)
 
+    // widget and layout for both TCP/UDP ports and DSCP and Packet lenght
+    var editRulePortDscpPackLenghtWid = widgets.NewQWidget(editRuleMainWid, 0)
+    editRuleMainWidLayout.AddWidget(editRulePortDscpPackLenghtWid, 0, 0)
+    var editRulePortDscpPackLenghtWidLayout = widgets.NewQHBoxLayout()
+    editRulePortDscpPackLenghtWid.SetLayout(editRulePortDscpPackLenghtWidLayout)
+
     // line edit for TCP/UDP ports
-    var editRulePortGroupBox = widgets.NewQGroupBox2("Port filters", editRuleMainWid)
-    editRuleMainWidLayout.AddWidget(editRulePortGroupBox, 0, 0)
+    var editRulePortGroupBox = widgets.NewQGroupBox2("Port filters", editRulePortDscpPackLenghtWid)
+    editRulePortDscpPackLenghtWidLayout.AddWidget(editRulePortGroupBox, 0, 0)
     var editRulePortLayout = widgets.NewQGridLayout2()
     editRulePortGroupBox.SetLayout(editRulePortLayout)
     var (
@@ -423,6 +453,27 @@ func flowspecWin() {
     editRulePortLayout.AddWidget(editRuleSrcPortLineEdit, 1, 1, 0)
     editRulePortLayout.AddWidget(editRuleDstPortLabel, 2, 0, 0)
     editRulePortLayout.AddWidget(editRuleDstPortLineEdit, 2, 1, 0)
+
+    // Line edit for packet length and DSCP
+    var editRuleLenDscpGroupBox = widgets.NewQGroupBox2("Packet Length and DSCP", editRulePortDscpPackLenghtWid)
+    editRulePortDscpPackLenghtWidLayout.AddWidget(editRuleLenDscpGroupBox, 0, 0)
+    var editRuleLenDscpLayout = widgets.NewQGridLayout2()
+    editRuleLenDscpGroupBox.SetLayout(editRuleLenDscpLayout)
+    var (
+        editRuleLenLabel = widgets.NewQLabel2("Packet length:", editRuleLenDscpGroupBox, 0)
+        editRuleDscpLabel = widgets.NewQLabel2("DiffServ Codepoints:", editRuleLenDscpGroupBox, 0)
+
+    )
+    editRuleLenLineEdit = widgets.NewQLineEdit(nil)
+    editRuleDscpLineEdit = widgets.NewQLineEdit(nil)
+    editRuleLenLineEdit.SetPlaceholderText("'>=64&<=1024'")
+    editRuleDscpLineEdit.SetPlaceholderText("'=46'")
+    editRuleLenDscpLayout.AddWidget(editRuleLenLabel, 0, 0, 0)
+    editRuleLenDscpLayout.AddWidget(editRuleLenLineEdit, 0, 1, 0)
+    editRuleLenDscpLayout.AddWidget(editRuleDscpLabel, 1, 0, 0)
+    editRuleLenDscpLayout.AddWidget(editRuleDscpLineEdit, 1, 1, 0)
+
+
     // line edit for TCP flags
     var editRuleTcpFlagGroupBox = widgets.NewQGroupBox2("TCP flags filter", editRuleMainWid)
     editRuleMainWidLayout.AddWidget(editRuleTcpFlagGroupBox, 0, 0)
@@ -462,25 +513,6 @@ func flowspecWin() {
     editRuleTcpFlagLayout.AddWidget(editRuleTcpOpNotCheck, 1, 6, 0)
     editRuleTcpFlagLayout.AddWidget(editRuleTcpOpMatchCheck, 1, 7, 0)
     editRuleTcpFlagLayout.AddWidget(editRuleTcpFlagAddButton, 1, 8, 0)
-
-    // Line edit for packet length and DSCP
-    var editRuleLenDscpGroupBox = widgets.NewQGroupBox2("Packet Length and DSCP", editRuleMainWid)
-    editRuleMainWidLayout.AddWidget(editRuleLenDscpGroupBox, 0, 0)
-    var editRuleLenDscpLayout = widgets.NewQGridLayout2()
-    editRuleLenDscpGroupBox.SetLayout(editRuleLenDscpLayout)
-    var (
-        editRuleLenLabel = widgets.NewQLabel2("Packet length:", editRuleLenDscpGroupBox, 0)
-        editRuleDscpLabel = widgets.NewQLabel2("DiffServ Codepoints:", editRuleLenDscpGroupBox, 0)
-
-    )
-    editRuleLenLineEdit = widgets.NewQLineEdit(nil)
-    editRuleDscpLineEdit = widgets.NewQLineEdit(nil)
-    editRuleLenLineEdit.SetPlaceholderText("'>=64&<=1024'")
-    editRuleDscpLineEdit.SetPlaceholderText("'=46'")
-    editRuleLenDscpLayout.AddWidget(editRuleLenLabel, 0, 0, 0)
-    editRuleLenDscpLayout.AddWidget(editRuleLenLineEdit, 0, 1, 0)
-    editRuleLenDscpLayout.AddWidget(editRuleDscpLabel, 0, 2, 0)
-    editRuleLenDscpLayout.AddWidget(editRuleDscpLineEdit, 0, 3, 0)
 
     // Line edit and checkbox for fragment filtering
     var editRuleFragGroupBox = widgets.NewQGroupBox2("IP Fragment", editRuleMainWid)
@@ -583,14 +615,14 @@ func flowspecWin() {
     }
     // Buttons for rib manip
     var ribManipButtonWid = widgets.NewQWidget(ribManipDockWid, 0)
-    var ribManipButtonWidLayout = widgets.NewQGridLayout2()
+    var ribManipButtonWidLayout = widgets.NewQVBoxLayout()
     ribManipButtonWid.SetLayout(ribManipButtonWidLayout)
     var (
         ribManipLoadButton = widgets.NewQPushButton2("Load/Reload BGP FS RIB", ribManipButtonWid)
         ribManipDeleteRuleButton = widgets.NewQPushButton2("Delete rule from RIB", ribManipButtonWid)
     )
-    ribManipButtonWidLayout.AddWidget(ribManipLoadButton, 0, 0, 0)
-    ribManipButtonWidLayout.AddWidget(ribManipDeleteRuleButton, 3, 0, 0)
+    ribManipButtonWidLayout.AddWidget(ribManipLoadButton, 0, 0)
+    ribManipButtonWidLayout.AddWidget(ribManipDeleteRuleButton, 0, 0)
     ribManipDockWidLayout.AddWidget(ribManipButtonWid, 0, 0)
 
     // wire push buttons of the dock
@@ -605,6 +637,31 @@ func flowspecWin() {
     flowspecWindow.Show()
 }
 
+// function called with IPv4 or IPv6 radiobutton is checked
+
+func editAddrFamIpv4Func(checked bool) {
+    AddrFamilyIpv4Checked = true
+    AddrFamilyIpv6Checked = false
+    editRuleSrcPrefixLineEdit.SetPlaceholderText("1.1.1.1/32")
+    editRuleDstPrefixLineEdit.SetPlaceholderText("2.2.2.2/24")
+    regexpIpv4SrcValidator = gui.NewQRegExpValidator2(regexpIpv4Validation, editRuleSrcPrefixLineEdit)
+    regexpIpv4DstValidator = gui.NewQRegExpValidator2(regexpIpv4Validation, editRuleDstPrefixLineEdit)
+    editRuleSrcPrefixLineEdit.SetValidator(regexpIpv4SrcValidator)
+    editRuleDstPrefixLineEdit.SetValidator(regexpIpv4DstValidator)
+}
+
+func editAddrFamIpv6Func(checked bool) {
+    AddrFamilyIpv6Checked = true
+    AddrFamilyIpv4Checked = false
+    editRuleSrcPrefixLineEdit.SetText("")
+    editRuleDstPrefixLineEdit.SetText("")
+    editRuleSrcPrefixLineEdit.SetPlaceholderText("2001:DB8::/32")
+    editRuleDstPrefixLineEdit.SetPlaceholderText("2001:DB8::1/128")
+    regexpIpv6SrcValidator = gui.NewQRegExpValidator2(regexpIpv6Validation, editRuleSrcPrefixLineEdit)
+    regexpIpv6DstValidator = gui.NewQRegExpValidator2(regexpIpv6Validation, editRuleDstPrefixLineEdit)
+    editRuleSrcPrefixLineEdit.SetValidator(regexpIpv6SrcValidator)
+    editRuleDstPrefixLineEdit.SetValidator(regexpIpv6DstValidator)
+}
 
 // function called when load rib button clicked
 
@@ -623,35 +680,37 @@ func flowspecWindowClosed(event *gui.QCloseEvent, myDock *widgets.QDockWidget){
 
 func createFullfilItemWithRule(ty int, myTree *widgets.QTreeWidget, myRule bgpcli.BgpFsRule) {
     var myItem = widgets.NewQTreeWidgetItem3(myTree, ty)
-    myItem.SetText(0, myRule.DstPrefix)
-    myItem.SetText(1, myRule.SrcPrefix)
-    myItem.SetText(2, myRule.Port)
-    myItem.SetText(3, myRule.SrcPort)
-    myItem.SetText(4, myRule.DstPort)
-    myItem.SetText(5, myRule.TcpFlags)
-    myItem.SetText(6, myRule.IcmpType)
-    myItem.SetText(7, myRule.IcmpCode)
-    myItem.SetText(8, myRule.ProtoNumber)
-    myItem.SetText(9, myRule.PacketLen)
-    myItem.SetText(10, myRule.Dscp)
-    myItem.SetText(11, myRule.IpFrag)
-    myItem.SetText(12, myRule.Action)
+    myItem.SetText(0, myRule.AddrFam)
+    myItem.SetText(1, myRule.DstPrefix)
+    myItem.SetText(2, myRule.SrcPrefix)
+    myItem.SetText(3, myRule.Port)
+    myItem.SetText(4, myRule.SrcPort)
+    myItem.SetText(5, myRule.DstPort)
+    myItem.SetText(6, myRule.TcpFlags)
+    myItem.SetText(7, myRule.IcmpType)
+    myItem.SetText(8, myRule.IcmpCode)
+    myItem.SetText(9, myRule.ProtoNumber)
+    myItem.SetText(10, myRule.PacketLen)
+    myItem.SetText(11, myRule.Dscp)
+    myItem.SetText(12, myRule.IpFrag)
+    myItem.SetText(13, myRule.Action)
 }
 
 func fullfilItemWithRule(ty int, myItem *widgets.QTreeWidgetItem, myRule bgpcli.BgpFsRule) {
-    myItem.SetText(0, myRule.DstPrefix)
-    myItem.SetText(1, myRule.SrcPrefix)
-    myItem.SetText(2, myRule.Port)
-    myItem.SetText(3, myRule.SrcPort)
-    myItem.SetText(4, myRule.DstPort)
-    myItem.SetText(5, myRule.TcpFlags)
-    myItem.SetText(6, myRule.IcmpType)
-    myItem.SetText(7, myRule.IcmpCode)
-    myItem.SetText(8, myRule.ProtoNumber)
-    myItem.SetText(9, myRule.PacketLen)
-    myItem.SetText(10, myRule.Dscp)
-    myItem.SetText(11, myRule.IpFrag)
-    myItem.SetText(12, myRule.Action)
+    myItem.SetText(0, myRule.AddrFam)
+    myItem.SetText(1, myRule.DstPrefix)
+    myItem.SetText(2, myRule.SrcPrefix)
+    myItem.SetText(3, myRule.Port)
+    myItem.SetText(4, myRule.SrcPort)
+    myItem.SetText(5, myRule.DstPort)
+    myItem.SetText(6, myRule.TcpFlags)
+    myItem.SetText(7, myRule.IcmpType)
+    myItem.SetText(8, myRule.IcmpCode)
+    myItem.SetText(9, myRule.ProtoNumber)
+    myItem.SetText(10, myRule.PacketLen)
+    myItem.SetText(11, myRule.Dscp)
+    myItem.SetText(12, myRule.IpFrag)
+    myItem.SetText(13, myRule.Action)
 }
 
 func fullfilTreeWithRuleLib(myTree *widgets.QTreeWidget, myRuleLib []bgpcli.BgpFsRule) {
@@ -661,6 +720,13 @@ func fullfilTreeWithRuleLib(myTree *widgets.QTreeWidget, myRuleLib []bgpcli.BgpF
 }
 
 func fullfilLineEditWithBgpFs(myRule bgpcli.BgpFsRule) {
+    if(myRule.AddrFam == "IPv4") {
+        editAddrFamIpv4.SetChecked(true)
+        editAddrFamIpv6.SetChecked(false)
+    } else if(myRule.AddrFam == "IPv6") {
+        editAddrFamIpv4.SetChecked(false)
+        editAddrFamIpv6.SetChecked(true)
+    }
     editRuleSrcPrefixLineEdit.SetText(myRule.SrcPrefix)
     editRuleDstPrefixLineEdit.SetText(myRule.DstPrefix)
     editRuleIcmpTypeLineEdit.SetText(myRule.IcmpType)
@@ -676,6 +742,11 @@ func fullfilLineEditWithBgpFs(myRule bgpcli.BgpFsRule) {
 }
 
 func fullfilBgpFsWithLineEdit(myIndex int) {
+    if (AddrFamilyIpv4Checked) {
+        BgpFsActivLib[myIndex].AddrFam = "IPv4"
+    } else if (AddrFamilyIpv6Checked) {
+        BgpFsActivLib[myIndex].AddrFam = "IPv6"
+    }
     BgpFsActivLib[myIndex].SrcPrefix = editRuleSrcPrefixLineEdit.Text()
     BgpFsActivLib[myIndex].DstPrefix =  editRuleDstPrefixLineEdit.Text()
     BgpFsActivLib[myIndex].IcmpType = editRuleIcmpTypeLineEdit.Text()
