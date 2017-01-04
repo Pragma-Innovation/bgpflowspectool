@@ -20,14 +20,14 @@ import (
 
 
 var BgpFsActivLib = []bgpcli.BgpFsRule{
-    {DstPrefix: "1.1.1.1/32", SrcPrefix: "2.2.2.2/32", AddrFam: "IPv4", Port: "8080",
-     SrcPort: "80", DstPort: "443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "6",
+    {DstPrefix: "1.1.1.1/32", SrcPrefix: "2.2.2.2/32", AddrFam: "IPv4", Port: "=8080",
+     SrcPort: "=80", DstPort: "=443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "=6",
      PacketLen: "1024", Dscp: "22", IpFrag: "", Action: "",},
-    {DstPrefix: "3.3.3.3/32", SrcPrefix: "4.4.4.4/32", AddrFam: "IPv4", Port: "8080",
-     SrcPort: "80", DstPort: "443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "6",
+    {DstPrefix: "3.3.3.3/32", SrcPrefix: "4.4.4.4/32", AddrFam: "IPv4", Port: "=8080",
+     SrcPort: "<80", DstPort: ">443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "=6",
      PacketLen: "1024", Dscp: "22", IpFrag: "", Action: "",},
-    {DstPrefix: "5.5.5.5/32", SrcPrefix: "6.6.6.6/32", AddrFam: "IPv4", Port: "8080",
-     SrcPort: "80", DstPort: "443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "6",
+    {DstPrefix: "5.5.5.5/32", SrcPrefix: "6.6.6.6/32", AddrFam: "IPv4", Port: ">=8080",
+     SrcPort: ">=80", DstPort: ">=443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "6",
      PacketLen: "1024", Dscp: "22", IpFrag: "", Action: "",},
 }
 
@@ -61,13 +61,18 @@ var (
     AddrFamilyIpv6Checked bool
 )
 
-var regexpIpv4Validation *core.QRegExp
-var regexpIpv6Validation *core.QRegExp
-var regexpIpv4SrcValidator *gui.QRegExpValidator
-var regexpIpv4DstValidator *gui.QRegExpValidator
-var regexpIpv6SrcValidator *gui.QRegExpValidator
-var regexpIpv6DstValidator *gui.QRegExpValidator
-
+var (
+    regexpIpv4Validation *core.QRegExp
+    regexpIpv6Validation *core.QRegExp
+    regexpPortValidation *core.QRegExp
+    regexpIpv4SrcValidator *gui.QRegExpValidator
+    regexpIpv4DstValidator *gui.QRegExpValidator
+    regexpIpv6SrcValidator *gui.QRegExpValidator
+    regexpIpv6DstValidator *gui.QRegExpValidator
+    regexpPortValidator *gui.QRegExpValidator
+    regexpSrcPortValidator *gui.QRegExpValidator
+    regexpDstPortValidator *gui.QRegExpValidator
+)
 
 func main() {
     // initialise boolean that tell us if sub-windows is already reated
@@ -447,6 +452,13 @@ func flowspecWin() {
     editRulePortLineEdit.SetPlaceholderText("'=80' '>=8080&<=8888'")
     editRuleSrcPortLineEdit.SetPlaceholderText("'=443&=80'")
     editRuleDstPortLineEdit.SetPlaceholderText("'>=1024&<=49151'")
+    regexpPortValidation = core.NewQRegExp2("(([<>=]6[0-5][0-5][0-3][0-5]|[<>=]65[1-4][0-9][0-9]|[<>=]655[1-2][0-9]|[<>=]64[0-9][0-9][0-9]|[<>=][1-9][0-9][0-9][0-9]|[<>=][1-9][0-9][0-9]|[<>=][1-9][0-9]|[<>=][1-9])|([& ][<>]6[0-5][0-5][0-3][0-5]|[& ][<>]65[1-4][0-9][0-9]|[& ][<>]655[1-2][0-9]|[& ][<>]64[0-9][0-9][0-9]|[& ][<>][1-9][0-9][0-9][0-9]|[& ][<>][1-9][0-9][0-9]|[& ][<>][1-9][0-9]|[& ][<>][1-9])|([<>& ]=6[0-5][0-5][0-3][0-5]|[<>& ]=65[1-4][0-9][0-9]|[<>& ]=655[1-2][0-9]|[<>& ]=64[0-9][0-9][0-9]|[<>& ]=[1-9][0-9][0-9][0-9]|[<>& ]=[1-9][0-9][0-9]|[<>& ]=[1-9][0-9]|[<>& ]=[1-9])|([& ][<>]=6[0-5][0-5][0-3][0-5]|[<>& ]=65[1-4][0-9][0-9]|[<>& ]=655[1-2][0-9]|[<>& ]=64[0-9][0-9][0-9]|[<>& ]=[1-9][0-9][0-9][0-9]|[<>& ]=[1-9][0-9][0-9]|[<>& ]=[1-9][0-9]|[<>& ]=[1-9])|([& ][<>]=6[0-5][0-5][0-3][0-5]|[& ][<>]=65[1-4][0-9][0-9]|[& ][<>]=655[1-2][0-9]|[& ][<>]=64[0-9][0-9][0-9]|[& ][<>]=[1-9][0-9][0-9][0-9]|[& ][<>]=[1-9][0-9][0-9]|[& ][<>]=[1-9][0-9]|[& ][<>]=[1-9]))*", core.Qt__CaseInsensitive, core.QRegExp__RegExp2)
+    regexpPortValidator = gui.NewQRegExpValidator2(regexpPortValidation, editRulePortLineEdit)
+    regexpSrcPortValidator = gui.NewQRegExpValidator2(regexpPortValidation, editRuleSrcPortLineEdit)
+    regexpDstPortValidator = gui.NewQRegExpValidator2(regexpPortValidation, editRuleDstPrefixLineEdit)
+    editRulePortLineEdit.SetValidator(regexpPortValidator)
+    editRuleSrcPortLineEdit.SetValidator(regexpSrcPortValidator)
+    editRuleDstPortLineEdit.SetValidator(regexpDstPortValidator)
     editRulePortLayout.AddWidget(editRulePortLabel, 0, 0, 0)
     editRulePortLayout.AddWidget(editRulePortLineEdit, 0, 1, 0)
     editRulePortLayout.AddWidget(editRuleSrcPortLabel, 1, 0, 0)
