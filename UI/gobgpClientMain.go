@@ -22,13 +22,13 @@ import (
 var BgpFsActivLib = []bgpcli.BgpFsRule{
     {DstPrefix: "1.1.1.1/32", SrcPrefix: "2.2.2.2/32", AddrFam: "IPv4", Port: "=8080",
      SrcPort: "=80", DstPort: "=443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "=6",
-     PacketLen: "1024", Dscp: "22", IpFrag: "", Action: "",},
+     PacketLen: ">1024", Dscp: "=22", IpFrag: "", Action: "",},
     {DstPrefix: "3.3.3.3/32", SrcPrefix: "4.4.4.4/32", AddrFam: "IPv4", Port: "=8080",
      SrcPort: "<80", DstPort: ">443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "=6",
-     PacketLen: "1024", Dscp: "22", IpFrag: "", Action: "",},
+     PacketLen: "<=1024", Dscp: "=22", IpFrag: "", Action: "",},
     {DstPrefix: "5.5.5.5/32", SrcPrefix: "6.6.6.6/32", AddrFam: "IPv4", Port: ">=8080",
-     SrcPort: ">=80", DstPort: ">=443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "6",
-     PacketLen: "1024", Dscp: "22", IpFrag: "", Action: "",},
+     SrcPort: ">=80", DstPort: ">=443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "=6 =8",
+     PacketLen: "=1024", Dscp: ">=22&<=55", IpFrag: "", Action: "",},
 }
 
 var (
@@ -65,6 +65,8 @@ var (
     regexpIpv4Validation *core.QRegExp
     regexpIpv6Validation *core.QRegExp
     regexpPortValidation *core.QRegExp
+    regexpByteValueValidation *core.QRegExp
+    regexpPckLenValidation *core.QRegExp
     regexpIpv4SrcValidator *gui.QRegExpValidator
     regexpIpv4DstValidator *gui.QRegExpValidator
     regexpIpv6SrcValidator *gui.QRegExpValidator
@@ -72,6 +74,11 @@ var (
     regexpPortValidator *gui.QRegExpValidator
     regexpSrcPortValidator *gui.QRegExpValidator
     regexpDstPortValidator *gui.QRegExpValidator
+    regexpIcmpTypeValidator *gui.QRegExpValidator
+    regexpIcmpCodeValidator *gui.QRegExpValidator
+    regexpProtoNumValidator *gui.QRegExpValidator
+    regexpDscpValidator *gui.QRegExpValidator
+    regexpPckLenValidator *gui.QRegExpValidator
 )
 
 func main() {
@@ -417,6 +424,11 @@ func flowspecWin() {
     editRuleIcmpLayout.AddWidget(editRuleIcmpTypeLineEdit, 0, 1, 0)
     editRuleIcmpLayout.AddWidget(editRuleIcmpCodeLabel, 1, 0, 0)
     editRuleIcmpLayout.AddWidget(editRuleIcmpCodeLineEdit, 1, 1, 0)
+    regexpByteValueValidation = core.NewQRegExp2("(([& ][<>]2[0-5][0-5]|[& ][<>]1[0-9][0-9]|[& ][<>][0-9][0-9]|[& ][<>][0-9])|([<>& ]=2[0-5][0-5]|[<>& ]=1[0-9][0-9]|[<>& ]=[0-9][0-9]|[<>& ]=[0-9])|([& ][<>]=2[0-5][0-5]|[<>& ]=1[0-9][0-9]|[<>& ]=[0-9][0-9]|[<>& ]=[0-9])|([& ][<>]=2[0-5][0-5]|[& ][<>]=1[0-9][0-9]|[& ][<>]=[0-9][0-9]|[& ][<>]=[0-9])|([<>=]2[0-5][0-5]|[<>=]1[0-9][0-9]|[<>=][0-9][0-9]|[<>=][0-9]))*", core.Qt__CaseInsensitive, core.QRegExp__RegExp2)
+    regexpIcmpCodeValidator = gui.NewQRegExpValidator2(regexpByteValueValidation, editRuleIcmpCodeLineEdit)
+    regexpIcmpTypeValidator = gui.NewQRegExpValidator2(regexpByteValueValidation, editRuleIcmpTypeLineEdit)
+    editRuleIcmpTypeLineEdit.SetValidator(regexpIcmpTypeValidator)
+    editRuleIcmpCodeLineEdit.SetValidator(regexpIcmpCodeValidator)
     // Line edit for IP protocol (Next header)
     var editRuleIpProtoGroupBox = widgets.NewQGroupBox2("IP protocol or Next header", editRuleMainWid)
     editRuleIcmpProtoWidLayout.AddWidget(editRuleIpProtoGroupBox, 0, 0)
@@ -429,7 +441,8 @@ func flowspecWin() {
     editRuleIpProtoLineEdit.SetPlaceholderText("'=6' '=17'")
     editRuleIpProtoLayout.AddWidget(editRuleIpProtoLabel, 0, 0, 0)
     editRuleIpProtoLayout.AddWidget(editRuleIpProtoLineEdit, 0, 1, 0)
-
+    regexpProtoNumValidator = gui.NewQRegExpValidator2(regexpByteValueValidation, editRuleIpProtoLineEdit)
+    editRuleIpProtoLineEdit.SetValidator(regexpProtoNumValidator)
     // widget and layout for both TCP/UDP ports and DSCP and Packet lenght
     var editRulePortDscpPackLenghtWid = widgets.NewQWidget(editRuleMainWid, 0)
     editRuleMainWidLayout.AddWidget(editRulePortDscpPackLenghtWid, 0, 0)
@@ -484,8 +497,11 @@ func flowspecWin() {
     editRuleLenDscpLayout.AddWidget(editRuleLenLineEdit, 0, 1, 0)
     editRuleLenDscpLayout.AddWidget(editRuleDscpLabel, 1, 0, 0)
     editRuleLenDscpLayout.AddWidget(editRuleDscpLineEdit, 1, 1, 0)
-
-
+    regexpDscpValidator = gui.NewQRegExpValidator2(regexpByteValueValidation, editRuleDscpLineEdit)
+    editRuleDscpLineEdit.SetValidator(regexpDscpValidator)
+    regexpPckLenValidation = core.NewQRegExp2("(([& ][<>]9000|[& ][<>]8[0-9][0-9][0-9]|[& ][<>][0-9][0-9][0-9]|[& ][<>][0-9][0-9]|[& ][<>][0-9])|([<>& ]=9000|[<>& ]=8[0-9][0-9][0-9]|[<>& ]=[0-9][0-9][0-9]|[<>& ]=[0-9][0-9]|[<>& ]=[0-9])|([& ][<>]=9000|[& ][<>]=8[0-9][0-9][0-9]|[& ][<>]=[0-9][0-9][0-9]|[& ][<>]=[0-9][0-9]|[& ][<>]=[0-9])|([& ][<>]=9000|[& ][<>]=8[0-9][0-9][0-9]|[& ][<>]=[0-9][0-9][0-9]|[& ][<>]=[0-9][0-9]|[& ][<>]=[0-9])|([<>=]9000|[<>=]8[0-9][0-9][0-9]|[<>=][0-9][0-9][0-9]|[<>=][0-9][0-9]|[<>=][0-9]))*", core.Qt__CaseInsensitive, core.QRegExp__RegExp2)
+    regexpPckLenValidator = gui.NewQRegExpValidator2(regexpPckLenValidation, editRuleLenLineEdit)
+    editRuleLenLineEdit.SetValidator(regexpPckLenValidator)
     // line edit for TCP flags
     var editRuleTcpFlagGroupBox = widgets.NewQGroupBox2("TCP flags filter", editRuleMainWid)
     editRuleMainWidLayout.AddWidget(editRuleTcpFlagGroupBox, 0, 0)
