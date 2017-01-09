@@ -34,6 +34,8 @@ var BgpFsActivLib = []bgpcli.BgpFsRule{
 var (
     editAddrFamIpv4 *widgets.QRadioButton
     editAddrFamIpv6 *widgets.QRadioButton
+    ribAddrFamIpv4 *widgets.QRadioButton
+    ribAddrFamIpv6 *widgets.QRadioButton
     editRuleSrcPrefixLineEdit *widgets.QLineEdit
     editRuleDstPrefixLineEdit *widgets.QLineEdit
     editRuleIcmpTypeLineEdit *widgets.QLineEdit
@@ -60,6 +62,8 @@ var (
     AddrFamilyIpv4Checked bool
     AddrFamilyIpv6Checked bool
 )
+
+var ribActiveFamily string = "ipv4-flowspec"
 
 var (
     regexpIpv4Validation *core.QRegExp
@@ -98,16 +102,17 @@ func main() {
 
     widgets.NewQApplication(len(os.Args), os.Args)
     var toolbarWindow = widgets.NewQMainWindow(nil, 0)
-    toolbarWindow.Layout().DestroyQObject()
     toolbarWindow.SetGeometry(core.NewQRect4(100, 100, 400, 50))
     toolbarWindow.SetWindowTitle("Gabu")
-    var toolbarMainLayout = widgets.NewQHBoxLayout()
-    toolbarMainLayout.SetSpacing(6)
-    toolbarMainLayout.SetContentsMargins(11, 11, 11, 11)
-    toolbarWindow.SetLayout(toolbarMainLayout)
+    var toolbarCentralWidget = widgets.NewQWidget(nil, 0)
+    var toolbarCentralLayout = widgets.NewQHBoxLayout()
+    toolbarCentralLayout.SetSpacing(6)
+    toolbarCentralLayout.SetContentsMargins(11, 11, 11, 11)
+    toolbarCentralWidget.SetLayout(toolbarCentralLayout)
+    toolbarWindow.SetCentralWidget(toolbarCentralWidget)
     // main window "toolbar" push button
-    var toolbarConsolePush = widgets.NewQPushButton2("GoBgp Console", toolbarWindow)
-    var toolbarFlowSpecPush = widgets.NewQPushButton2("FlowSpec RIB", toolbarWindow)
+    var toolbarConsolePush = widgets.NewQPushButton2("GoBgp Console", toolbarCentralWidget)
+    var toolbarFlowSpecPush = widgets.NewQPushButton2("FlowSpec RIB", toolbarCentralWidget)
 
     var toolbarButtonSizePolicy = widgets.NewQSizePolicy()
     toolbarButtonSizePolicy.SetHorizontalPolicy(widgets.QSizePolicy__Expanding)
@@ -121,8 +126,8 @@ func main() {
     toolbarConsolePush.ConnectClicked(func(_ bool) { toolbarConsolButtonClicked() })
     toolbarFlowSpecPush.ConnectClicked(func(_ bool) { toolbarFspecButtonPushed() })
     // add button to main layout
-    toolbarMainLayout.AddWidget(toolbarConsolePush, 0, 0)
-    toolbarMainLayout.AddWidget(toolbarFlowSpecPush, 0, 0)
+    toolbarCentralLayout.AddWidget(toolbarConsolePush, 0, 0)
+    toolbarCentralLayout.AddWidget(toolbarFlowSpecPush, 0, 0)
     toolbarWindow.Show()
     widgets.QApplication_Exec()
 
@@ -155,17 +160,18 @@ func toolbarFspecButtonPushed() {
 func consoleWin() {
 
     consoleWindow = widgets.NewQMainWindow(nil, 0)
-    consoleWindow.Layout().DestroyQObject()
     consoleWindow.SetGeometry(core.NewQRect4(100, 100, 1000, 600))
     consoleWindow.SetWindowTitle("GoBGP Console")
-    var mainLayout = widgets.NewQHBoxLayout()
-    mainLayout.SetSpacing(6)
-    mainLayout.SetContentsMargins(11, 11, 11, 11)
-    consoleWindow.SetLayout(mainLayout)
+    var consoleWindowCentralWidget = widgets.NewQWidget(nil, 0)
+    var consoleWindowCentralWidgetLayout = widgets.NewQHBoxLayout()
+    consoleWindowCentralWidgetLayout.SetSpacing(6)
+    consoleWindowCentralWidgetLayout.SetContentsMargins(11, 11, 11, 11)
+    consoleWindowCentralWidget.SetLayout(consoleWindowCentralWidgetLayout)
+    consoleWindow.SetCentralWidget(consoleWindowCentralWidget)
 
     // console window widgets
     // log Frame
-    var logFrame = widgets.NewQFrame(consoleWindow, 0)
+    var logFrame = widgets.NewQFrame(consoleWindowCentralWidget, 0)
     logFrame.SetFrameShape(widgets.QFrame__Panel)
     logFrame.SetFrameShadow(widgets.QFrame__Raised)
     var frameSizePolicy = widgets.NewQSizePolicy()
@@ -205,10 +211,10 @@ func consoleWin() {
     logLayout.AddWidget(logText, 0, 0)
 
     logFrame.SetLayout(logLayout)
-    mainLayout.AddWidget(logFrame, 0, 0)
+    consoleWindowCentralWidgetLayout.AddWidget(logFrame, 0, 0)
 
     // command Frame
-    var cmdFrame = widgets.NewQFrame(consoleWindow, 0)
+    var cmdFrame = widgets.NewQFrame(consoleWindowCentralWidget, 0)
     cmdFrame.SetFrameShape(widgets.QFrame__Panel)
     cmdFrame.SetFrameShadow(widgets.QFrame__Raised)
     cmdFrame.SetSizePolicy(frameSizePolicy)
@@ -245,7 +251,7 @@ func consoleWin() {
     var cmdVerticalSpacer = widgets.NewQSpacerItem(20, 40, widgets.QSizePolicy__Fixed, widgets.QSizePolicy__Expanding)
     cmdLayout.AddItem(cmdVerticalSpacer)
     cmdFrame.SetLayout(cmdLayout)
-    mainLayout.AddWidget(cmdFrame, 0, 0)
+    consoleWindowCentralWidgetLayout.AddWidget(cmdFrame, 0, 0)
 
     // Connect push buttons
     cmdNeighButton.ConnectClicked(func(_ bool) { cmdNeighButtonClicked(logText) })
@@ -418,8 +424,8 @@ func flowspecWin() {
     )
     editRuleIcmpTypeLineEdit = widgets.NewQLineEdit(nil)
     editRuleIcmpCodeLineEdit = widgets.NewQLineEdit(nil)
-    editRuleIcmpTypeLineEdit.SetPlaceholderText("'=0' '=8'")
-    editRuleIcmpCodeLineEdit.SetPlaceholderText("'=0'")
+    editRuleIcmpTypeLineEdit.SetPlaceholderText("=0 =8")
+    editRuleIcmpCodeLineEdit.SetPlaceholderText("=0")
     editRuleIcmpLayout.AddWidget(editRuleIcmpTypeLabel, 0, 0, 0)
     editRuleIcmpLayout.AddWidget(editRuleIcmpTypeLineEdit, 0, 1, 0)
     editRuleIcmpLayout.AddWidget(editRuleIcmpCodeLabel, 1, 0, 0)
@@ -438,7 +444,7 @@ func flowspecWin() {
         editRuleIpProtoLabel = widgets.NewQLabel2("Protocol number:", editRuleIcmpGroupBox, 0)
     )
     editRuleIpProtoLineEdit = widgets.NewQLineEdit(nil)
-    editRuleIpProtoLineEdit.SetPlaceholderText("'=6' '=17'")
+    editRuleIpProtoLineEdit.SetPlaceholderText("=6 =17")
     editRuleIpProtoLayout.AddWidget(editRuleIpProtoLabel, 0, 0, 0)
     editRuleIpProtoLayout.AddWidget(editRuleIpProtoLineEdit, 0, 1, 0)
     regexpProtoNumValidator = gui.NewQRegExpValidator2(regexpByteValueValidation, editRuleIpProtoLineEdit)
@@ -462,9 +468,9 @@ func flowspecWin() {
     editRulePortLineEdit = widgets.NewQLineEdit(nil)
     editRuleSrcPortLineEdit = widgets.NewQLineEdit(nil)
     editRuleDstPortLineEdit = widgets.NewQLineEdit(nil)
-    editRulePortLineEdit.SetPlaceholderText("'=80' '>=8080&<=8888'")
-    editRuleSrcPortLineEdit.SetPlaceholderText("'=443&=80'")
-    editRuleDstPortLineEdit.SetPlaceholderText("'>=1024&<=49151'")
+    editRulePortLineEdit.SetPlaceholderText("=80 >=8080&<=8888")
+    editRuleSrcPortLineEdit.SetPlaceholderText("=443&=80")
+    editRuleDstPortLineEdit.SetPlaceholderText(">=1024&<=49151")
     regexpPortValidation = core.NewQRegExp2("(([<>=]6[0-5][0-5][0-3][0-5]|[<>=]65[1-4][0-9][0-9]|[<>=]655[1-2][0-9]|[<>=]64[0-9][0-9][0-9]|[<>=][1-9][0-9][0-9][0-9]|[<>=][1-9][0-9][0-9]|[<>=][1-9][0-9]|[<>=][1-9])|([& ][<>]6[0-5][0-5][0-3][0-5]|[& ][<>]65[1-4][0-9][0-9]|[& ][<>]655[1-2][0-9]|[& ][<>]64[0-9][0-9][0-9]|[& ][<>][1-9][0-9][0-9][0-9]|[& ][<>][1-9][0-9][0-9]|[& ][<>][1-9][0-9]|[& ][<>][1-9])|([<>& ]=6[0-5][0-5][0-3][0-5]|[<>& ]=65[1-4][0-9][0-9]|[<>& ]=655[1-2][0-9]|[<>& ]=64[0-9][0-9][0-9]|[<>& ]=[1-9][0-9][0-9][0-9]|[<>& ]=[1-9][0-9][0-9]|[<>& ]=[1-9][0-9]|[<>& ]=[1-9])|([& ][<>]=6[0-5][0-5][0-3][0-5]|[<>& ]=65[1-4][0-9][0-9]|[<>& ]=655[1-2][0-9]|[<>& ]=64[0-9][0-9][0-9]|[<>& ]=[1-9][0-9][0-9][0-9]|[<>& ]=[1-9][0-9][0-9]|[<>& ]=[1-9][0-9]|[<>& ]=[1-9])|([& ][<>]=6[0-5][0-5][0-3][0-5]|[& ][<>]=65[1-4][0-9][0-9]|[& ][<>]=655[1-2][0-9]|[& ][<>]=64[0-9][0-9][0-9]|[& ][<>]=[1-9][0-9][0-9][0-9]|[& ][<>]=[1-9][0-9][0-9]|[& ][<>]=[1-9][0-9]|[& ][<>]=[1-9]))*", core.Qt__CaseInsensitive, core.QRegExp__RegExp2)
     regexpPortValidator = gui.NewQRegExpValidator2(regexpPortValidation, editRulePortLineEdit)
     regexpSrcPortValidator = gui.NewQRegExpValidator2(regexpPortValidation, editRuleSrcPortLineEdit)
@@ -491,8 +497,8 @@ func flowspecWin() {
     )
     editRuleLenLineEdit = widgets.NewQLineEdit(nil)
     editRuleDscpLineEdit = widgets.NewQLineEdit(nil)
-    editRuleLenLineEdit.SetPlaceholderText("'>=64&<=1024'")
-    editRuleDscpLineEdit.SetPlaceholderText("'=46'")
+    editRuleLenLineEdit.SetPlaceholderText(">=64&<=1024")
+    editRuleDscpLineEdit.SetPlaceholderText("=46")
     editRuleLenDscpLayout.AddWidget(editRuleLenLabel, 0, 0, 0)
     editRuleLenDscpLayout.AddWidget(editRuleLenLineEdit, 0, 1, 0)
     editRuleLenDscpLayout.AddWidget(editRuleDscpLabel, 1, 0, 0)
@@ -649,9 +655,17 @@ func flowspecWin() {
         ribManipLoadButton = widgets.NewQPushButton2("Load/Reload BGP FS RIB", ribManipButtonWid)
         ribManipDeleteRuleButton = widgets.NewQPushButton2("Delete rule from RIB", ribManipButtonWid)
     )
+    ribAddrFamIpv4 = widgets.NewQRadioButton2("RIB IPv4", ribManipButtonWid)
+    ribAddrFamIpv4.SetChecked(true)
+    ribAddrFamIpv6 = widgets.NewQRadioButton2("RIB IPv6", ribManipButtonWid)
     ribManipButtonWidLayout.AddWidget(ribManipLoadButton, 0, 0)
     ribManipButtonWidLayout.AddWidget(ribManipDeleteRuleButton, 0, 0)
+    ribManipButtonWidLayout.AddWidget(ribAddrFamIpv4, 0, 0)
+    ribManipButtonWidLayout.AddWidget(ribAddrFamIpv6, 0, 0)
     ribManipDockWidLayout.AddWidget(ribManipButtonWid, 0, 0)
+    // Wire address family radio button
+    ribAddrFamIpv4.ConnectClicked(ribAddrFamIpv4Func)
+    ribAddrFamIpv6.ConnectClicked(ribAddrFamIpv6Func)
 
     // wire push buttons of the dock
     ribManipLoadButton.ConnectClicked(func(_ bool) {ribManipLoadRibFunc(ribContentTree)})
@@ -665,7 +679,7 @@ func flowspecWin() {
     flowspecWindow.Show()
 }
 
-// function called with IPv4 or IPv6 radiobutton is checked
+// function called with IPv4 or IPv6 radiobutton from edit widget is checked
 
 func editAddrFamIpv4Func(checked bool) {
     AddrFamilyIpv4Checked = true
@@ -691,10 +705,21 @@ func editAddrFamIpv6Func(checked bool) {
     editRuleDstPrefixLineEdit.SetValidator(regexpIpv6DstValidator)
 }
 
+// func called when IPv4 or IPv6 RIB radio button are checked
+
+func ribAddrFamIpv4Func(checked bool) {
+    ribActiveFamily = "ipv4-flowspec"
+}
+
+func ribAddrFamIpv6Func(checked bool) {
+    ribActiveFamily = "ipv6-flowspec"
+}
+
 // function called when load rib button clicked
 
 func ribManipLoadRibFunc(myTree *widgets.QTreeWidget) {
-    bgpcli.FlowSpecRibFulfillTree(client, myTree)
+    cleanupRibTree(myTree)
+    bgpcli.FlowSpecRibFulfillTree(client, myTree, ribActiveFamily)
 }
 
 // function called when window get closed
@@ -744,6 +769,15 @@ func fullfilItemWithRule(ty int, myItem *widgets.QTreeWidgetItem, myRule bgpcli.
 func fullfilTreeWithRuleLib(myTree *widgets.QTreeWidget, myRuleLib []bgpcli.BgpFsRule) {
     for i, myRule := range myRuleLib {
         createFullfilItemWithRule(i, myTree, myRule)
+    }
+}
+
+func cleanupRibTree(myTree *widgets.QTreeWidget) {
+    if (myTree.TopLevelItemCount() != 0) {
+        maxItem := myTree.TopLevelItemCount()
+        for i := (maxItem-1); i >= 0; i-- {
+            myTree.TakeTopLevelItem(i)
+        }
     }
 }
 
@@ -826,4 +860,16 @@ func editGlobButtonDeleteFunc() {
 
 func editGlobButtonResetFunc() {
     fmt.Printf("Reset button\n")
+    editRuleSrcPrefixLineEdit.SetText("")
+    editRuleDstPrefixLineEdit.SetText("")
+    editRuleIcmpTypeLineEdit.SetText("")
+    editRuleIcmpCodeLineEdit.SetText("")
+    editRuleIpProtoLineEdit.SetText("")
+    editRulePortLineEdit.SetText("")
+    editRuleSrcPortLineEdit.SetText("")
+    editRuleDstPortLineEdit.SetText("")
+    editRuleTcpFlagFilterLine.SetText("")
+    editRuleLenLineEdit.SetText("")
+    editRuleDscpLineEdit.SetText("")
+    editRuleFragFilterLine.SetText("")
 }

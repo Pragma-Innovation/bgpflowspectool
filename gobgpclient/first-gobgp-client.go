@@ -126,11 +126,11 @@ func TxtdumpGetNeighbor(client api.GobgpApiClient) []string {
     return dumpResult
 }
 
-func FlowSpecRibFulfillTree (client api.GobgpApiClient, myTree *widgets.QTreeWidget) {
+func FlowSpecRibFulfillTree (client api.GobgpApiClient, myTree *widgets.QTreeWidget, myFamily string) {
     var dsts []*api.Destination
     var myNativeTable *table.Table
     resource := api.Resource_GLOBAL
-    family, _ := bgp.GetRouteFamily("ipv4-flowspec")
+    family, _ := bgp.GetRouteFamily(myFamily)
 
     res, err := client.GetRib(context.Background(), &api.GetRibRequest{
         Table: &api.Table{
@@ -197,5 +197,8 @@ func showRouteToItem(pathList []*table.Path, myTree *widgets.QTreeWidget) {
         // fmt.Printf("nexthop: %s\n", nexthop)
         // fmt.Printf("pattrstr: %s\n", pattrstr)
         // fmt.Printf("Age: %s\n", age)
+    }
+    for i := 0; i < 4; i++ {
+        myTree.ResizeColumnToContents(i)
     }
 }
