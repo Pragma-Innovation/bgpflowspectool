@@ -28,6 +28,7 @@ type BgpFsRule struct {
     Dscp string
     IpFrag string
     Action string
+    ActSisterValue string
 }
 
 func formatTimedelta(d int64) string {

@@ -31,6 +31,30 @@ var BgpFsActivLib = []bgpcli.BgpFsRule{
      PacketLen: "=1024", Dscp: ">=22&<=55", IpFrag: "", Action: "",},
 }
 
+
+const (
+    FS_ACT_DROP int = iota
+    FS_ACT_SHAPE
+    FS_ACT_REDIRECT
+    FS_ACT_MARK
+)
+
+var flowSpecActNameMap = map[int]string{
+    FS_ACT_DROP:        "Drop",
+    FS_ACT_SHAPE:       "Shape",
+    FS_ACT_REDIRECT:    "Redirect",
+    FS_ACT_MARK:        "Marking",
+}
+
+var flowSpecActValueMap = map[string]int{
+    flowSpecActNameMap[FS_ACT_DROP]:        FS_ACT_DROP,
+    flowSpecActNameMap[FS_ACT_SHAPE]:       FS_ACT_SHAPE,
+    flowSpecActNameMap[FS_ACT_REDIRECT]:    FS_ACT_REDIRECT,
+    flowSpecActNameMap[FS_ACT_MARK]:        FS_ACT_MARK,
+}
+
+var flowSpecActStrings = []string{"Drop", "Shape", "Redirect", "Marking"}
+
 var (
     editAddrFamIpv4 *widgets.QRadioButton
     editAddrFamIpv6 *widgets.QRadioButton
@@ -48,6 +72,8 @@ var (
     editRuleLenLineEdit *widgets.QLineEdit
     editRuleDscpLineEdit *widgets.QLineEdit
     editRuleFragFilterLine *widgets.QLineEdit
+    editRuleActSisterValueLine *widgets.QLineEdit
+    editRuleActionCombo *widgets.QComboBox
     editRuleTree *widgets.QTreeWidget
     consoleWindow *widgets.QMainWindow
     flowspecWindow *widgets.QMainWindow
@@ -335,10 +361,10 @@ func flowspecWin() {
     editRuleTree.SetSizePolicy(expandingSizePolicy)
     editRuleLibWidLayout.AddWidget(editRuleLabel, 0, 0)
     editRuleLibWidLayout.AddWidget(editRuleTree, 0, 0)
-    editRuleTree.SetColumnCount(14)
+    editRuleTree.SetColumnCount(15)
     var editRuleTreeHeaderItem = editRuleTree.HeaderItem()
     libHeaderLabels := []string{"Add Family", "Dst Prefix", "Src Prefix", "Port", "Src Port", "Dst Port", "TCP flags",
-"ICMP Type", "ICMP code", "Proto Number", "Packet Len", "DSCP", "IP Frag", "Action"}
+"ICMP Type", "ICMP code", "Proto Num", "Pack Len", "DSCP", "IP Frag", "Action", "Act Value"}
     for i, myLabel := range libHeaderLabels {
         editRuleTreeHeaderItem.SetText(i, myLabel)
     }
@@ -588,14 +614,13 @@ func flowspecWin() {
     editRuleMainWidLayout.AddWidget(editRuleActionGroupBox, 0, 0)
     var editRuleActionLayout = widgets.NewQGridLayout2()
     editRuleActionGroupBox.SetLayout(editRuleActionLayout)
-    var (
-        editRuleActionCombo = widgets.NewQComboBox(nil)
-        editRuleRouteTargetLine = widgets.NewQLineEdit(nil)
-    )
-    editRuleActionCombo.AddItems([]string{"Drop", "Shape", "Redirect", "Marking"})
+    editRuleActionCombo = widgets.NewQComboBox(nil)
+    editRuleActSisterValueLine = widgets.NewQLineEdit(nil)
+    editRuleActionCombo.AddItems(flowSpecActStrings)
     editRuleActionLayout.AddWidget(editRuleActionCombo, 0, 0, 0)
-    editRuleActionLayout.AddWidget(editRuleRouteTargetLine, 1, 0, 0)
-
+    editRuleActionLayout.AddWidget(editRuleActSisterValueLine, 1, 0, 0)
+    // wire combo button
+    editRuleActionCombo.ConnectCurrentIndexChanged(func(index int) { editRuleActionComboFunc(editRuleActSisterValueLine, index) })
     // global apply button
     var editRuleGlobButtonFrame = widgets.NewQFrame(editRuleMainWid, 0)
     var editRuleGlobButtonlayout = widgets.NewQGridLayout2()
@@ -747,6 +772,7 @@ func createFullfilItemWithRule(ty int, myTree *widgets.QTreeWidget, myRule bgpcl
     myItem.SetText(11, myRule.Dscp)
     myItem.SetText(12, myRule.IpFrag)
     myItem.SetText(13, myRule.Action)
+    myItem.SetText(14, myRule.ActSisterValue)
 }
 
 func fullfilItemWithRule(ty int, myItem *widgets.QTreeWidgetItem, myRule bgpcli.BgpFsRule) {
@@ -764,6 +790,7 @@ func fullfilItemWithRule(ty int, myItem *widgets.QTreeWidgetItem, myRule bgpcli.
     myItem.SetText(11, myRule.Dscp)
     myItem.SetText(12, myRule.IpFrag)
     myItem.SetText(13, myRule.Action)
+    myItem.SetText(14, myRule.ActSisterValue)
 }
 
 func fullfilTreeWithRuleLib(myTree *widgets.QTreeWidget, myRuleLib []bgpcli.BgpFsRule) {
@@ -801,6 +828,8 @@ func fullfilLineEditWithBgpFs(myRule bgpcli.BgpFsRule) {
     editRuleLenLineEdit.SetText(myRule.PacketLen)
     editRuleDscpLineEdit.SetText(myRule.Dscp)
     editRuleFragFilterLine.SetText(myRule.IpFrag)
+    editRuleActionCombo.SetCurrentIndex(flowSpecActValueMap[myRule.Action])
+    editRuleActSisterValueLine.SetText(myRule.ActSisterValue)
 }
 
 func fullfilBgpFsWithLineEdit(myIndex int) {
@@ -821,6 +850,12 @@ func fullfilBgpFsWithLineEdit(myIndex int) {
     BgpFsActivLib[myIndex].PacketLen = editRuleLenLineEdit.Text()
     BgpFsActivLib[myIndex].Dscp = editRuleDscpLineEdit.Text()
     BgpFsActivLib[myIndex].IpFrag = editRuleFragFilterLine.Text()
+    BgpFsActivLib[myIndex].Action = flowSpecActStrings[editRuleActionCombo.CurrentIndex()]
+    if (flowSpecActStrings[editRuleActionCombo.CurrentIndex()] == "Drop") {
+        BgpFsActivLib[myIndex].ActSisterValue = ""
+    } else {
+        BgpFsActivLib[myIndex].ActSisterValue = editRuleActSisterValueLine.Text()
+    }
 }
 
 // fucntion when an lib item is clicked
@@ -872,4 +907,28 @@ func editGlobButtonResetFunc() {
     editRuleLenLineEdit.SetText("")
     editRuleDscpLineEdit.SetText("")
     editRuleFragFilterLine.SetText("")
+    editRuleActSisterValueLine.SetText("")
+    editRuleActionCombo.SetCurrentIndex(0)
+}
+
+
+func editRuleActionComboFunc(myLine *widgets.QLineEdit, myIndex int) {
+    switch flowSpecActStrings[myIndex] {
+        case "Drop": {
+            myLine.SetReadOnly(true)
+            myLine.SetPlaceholderText("No data required")
+        }
+        case "Shape": {
+            myLine.SetReadOnly(false)
+            myLine.SetPlaceholderText("3000 (expressed in KB)")
+        }
+        case "Redirect": {
+            myLine.SetReadOnly(false)
+            myLine.SetPlaceholderText("10:10")
+        }
+        case "Marking": {
+            myLine.SetReadOnly(false)
+            myLine.SetPlaceholderText("22")
+        }
+    }
 }
