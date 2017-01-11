@@ -3,11 +3,16 @@ package gobgpclient
 import (
     "fmt"
     "time"
+    "strings"
     "golang.org/x/net/context"
     "github.com/osrg/gobgp/packet/bgp"
     api "github.com/osrg/gobgp/api"
     "github.com/osrg/gobgp/table"
     "github.com/therecipe/qt/widgets"
+    // "github.com/osrg/gobgp/client"
+    "github.com/osrg/gobgp/gobgp/cmd"
+    // "github.com/osrg/gobgp/packet/bgp"
+    // "github.com/osrg/gobgp/table"
 )
 
 // data strcutures used by both API functions and UI
@@ -202,4 +207,29 @@ func showRouteToItem(pathList []*table.Path, myTree *widgets.QTreeWidget) {
     for i := 0; i < 4; i++ {
         myTree.ResizeColumnToContents(i)
     }
+}
+
+
+func PushNewFlowSpecPath(client api.GobgpApiClient, myCommand string) {
+        path, _ := cmd.ParsePath(bgp.RF_FS_IPv4_UC, strings.Split(myCommand, " "))
+        addFlowSpecPath(client, []*table.Path{path})
+}
+
+
+func addFlowSpecPath(client api.GobgpApiClient, pathList []*table.Path) ([]byte, error) {
+    vrfID := ""
+    resource := api.Resource_GLOBAL
+    var uuid []byte
+    for _, path := range pathList {
+        r, err := client.AddPath(context.Background(), &api.AddPathRequest{
+            Resource: resource,
+            VrfId:    vrfID,
+            Path:     api.ToPathApi(path),
+        })
+        if err != nil {
+            return nil, err
+        }
+        uuid = r.Uuid
+    }
+    return uuid, nil
 }

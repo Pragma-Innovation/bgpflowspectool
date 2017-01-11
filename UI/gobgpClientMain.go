@@ -384,9 +384,8 @@ func flowspecWin() {
     editRuleLibButtonFrameLayout.AddWidget(editRuleLibLoadButton, 0, 0, 0)
     editRuleLibButtonFrameLayout.AddWidget(editRuleLibSaveButton, 0, 1, 0)
     editRuleLibButtonFrameLayout.AddWidget(editRuleLibPushRibButton, 0, 2, 0)
-
-    // var editRuleLibWidSpacer = widgets.NewQSpacerItem(20, 40, widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Fixed)
-    // editRuleLibButtonFrameLayout.AddItem(editRuleLibWidSpacer)
+    // wire push button
+    editRuleLibPushRibButton.ConnectClicked(func(_ bool) {editRuleLibPushRibButtonFunc()})
 
     // Edit rule widget creation: it includes all required
     // UI Widget to edit a BGP flowspec rule
@@ -687,6 +686,9 @@ func flowspecWin() {
     ribManipButtonWidLayout.AddWidget(ribManipDeleteRuleButton, 0, 0)
     ribManipButtonWidLayout.AddWidget(ribAddrFamIpv4, 0, 0)
     ribManipButtonWidLayout.AddWidget(ribAddrFamIpv6, 0, 0)
+    var ribManipWidSpacer = widgets.NewQSpacerItem(20, 40, widgets.QSizePolicy__Fixed, widgets.QSizePolicy__Expanding)
+    ribManipButtonWidLayout.AddItem(ribManipWidSpacer)
+
     ribManipDockWidLayout.AddWidget(ribManipButtonWid, 0, 0)
     // Wire address family radio button
     ribAddrFamIpv4.ConnectClicked(ribAddrFamIpv4Func)
@@ -877,9 +879,14 @@ func editGlobButtonNewFunc() {
 func editGlobButtonApplyFunc() {
     var myItem *widgets.QTreeWidgetItem
     myItem = editRuleTree.CurrentItem()
-    index := editRuleTree.IndexOfTopLevelItem(myItem)
-    fullfilBgpFsWithLineEdit(index)
-    fullfilItemWithRule(index, myItem, BgpFsActivLib[index])
+    if (*myItem != (widgets.QTreeWidgetItem{})) {
+        index := editRuleTree.IndexOfTopLevelItem(myItem)
+        fullfilBgpFsWithLineEdit(index)
+        fullfilItemWithRule(index, myItem, BgpFsActivLib[index])
+    } else {
+        warningMessage := widgets.NewQMessageBox2(widgets.QMessageBox__Warning, "Rule library issue", "Please select a rule to apply changes", widgets.QMessageBox__Ok, flowspecWindow, core.Qt__Window)
+        warningMessage.Exec()
+    }
 }
 
 func editGlobButtonDeleteFunc() {
@@ -932,3 +939,16 @@ func editRuleActionComboFunc(myLine *widgets.QLineEdit, myIndex int) {
         }
     }
 }
+
+func editRuleLibPushRibButtonFunc() {
+    var myItem *widgets.QTreeWidgetItem
+    myItem = editRuleTree.CurrentItem()
+    if (*myItem != (widgets.QTreeWidgetItem{})) {
+        index := editRuleTree.IndexOfTopLevelItem(myItem)
+        fmt.Printf("push item number: %d\n", index)
+    } else {
+        warningMessage := widgets.NewQMessageBox2(widgets.QMessageBox__Warning, "Rule library issue", "Please select a rule to push to the rib", widgets.QMessageBox__Ok, flowspecWindow, core.Qt__Window)
+        warningMessage.Exec()
+    }
+}
+
