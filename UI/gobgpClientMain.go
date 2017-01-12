@@ -872,6 +872,8 @@ func editRuleLibItemSelected(myItem *widgets.QTreeWidgetItem, column int) {
 func editGlobButtonNewFunc() {
     var myFsRule bgpcli.BgpFsRule
     myFsRule.DstPrefix = "New"
+    myFsRule.AddrFam = "IPv4"
+    myFsRule.Action = "Drop"
     BgpFsActivLib = append(BgpFsActivLib, myFsRule)
     createFullfilItemWithRule(len(BgpFsActivLib)-1, editRuleTree, BgpFsActivLib[len(BgpFsActivLib)-1])
 }
@@ -945,10 +947,98 @@ func editRuleLibPushRibButtonFunc() {
     myItem = editRuleTree.CurrentItem()
     if (*myItem != (widgets.QTreeWidgetItem{})) {
         index := editRuleTree.IndexOfTopLevelItem(myItem)
-        fmt.Printf("push item number: %d\n", index)
+        if (sanityCheckBeforePush(BgpFsActivLib[index] ,flowspecWindow)) {
+            myCommandLine := buildCommandFromFsRule(BgpFsActivLib[index])
+            fmt.Printf("Commande: %s\n", myCommandLine)
+        } else {
+            return
+        }
+
     } else {
         warningMessage := widgets.NewQMessageBox2(widgets.QMessageBox__Warning, "Rule library issue", "Please select a rule to push to the rib", widgets.QMessageBox__Ok, flowspecWindow, core.Qt__Window)
         warningMessage.Exec()
     }
 }
 
+
+func sanityCheckBeforePush(myRule bgpcli.BgpFsRule, parentWidget widgets.QWidget_ITF) bool {
+    var nlriOk bool = false
+    var extComOk bool = false
+    var errorQMessageBox string = ""
+    if ((myRule.AddrFam != "IPv4") && (myRule.AddrFam != "IPv6")) {
+        errorQMessageBox = fmt.Sprintf("%s%s", errorQMessageBox, "Wrong address Family ")
+    } else if (myRule.DstPrefix =="New") {
+        errorQMessageBox = fmt.Sprintf("%s%s", errorQMessageBox, "This rule needs to be crafted ")
+    } else if ((myRule.DstPrefix == "") && (myRule.SrcPrefix == "") && (myRule.Port == "") && (myRule.SrcPort == "") && (myRule.DstPort == "") && (myRule.TcpFlags == "") && (myRule.IcmpType == "") && (myRule.IcmpCode == "") && (myRule.ProtoNumber == "") && (myRule.PacketLen == "") && (myRule.Dscp == "") && (myRule.IpFrag == "")) {
+        errorQMessageBox = fmt.Sprintf("%s%s", errorQMessageBox, "Your rule is empty ")
+    } else {
+        nlriOk = true
+    }
+    if (myRule.Action == "") {
+         errorQMessageBox = fmt.Sprintf("%s%s", errorQMessageBox, "Your rule needs an Action")
+    } else if (myRule.ActSisterValue == "" && myRule.Action != "Drop") {
+        errorQMessageBox = fmt.Sprintf("%s%s", errorQMessageBox, "Your action needs an associated value")
+    } else {
+        extComOk = true
+    }
+    if (extComOk == false || nlriOk == false) {
+        warningMessage := widgets.NewQMessageBox2(widgets.QMessageBox__Warning, "Rule badly formatted", errorQMessageBox, widgets.QMessageBox__Ok, parentWidget, core.Qt__Window)
+        warningMessage.Exec()
+        return false
+    } else {
+        return true
+    }
+}
+
+func buildCommandFromFsRule(myRule bgpcli.BgpFsRule) string {
+    var cmdLine string = "match "
+    // nlri
+    if (myRule.DstPrefix != "") {
+        cmdLine = fmt.Sprintf("%s%s%s%s", cmdLine, "destination ", myRule.DstPrefix, " ")
+    }
+    if (myRule.SrcPrefix != "") {
+        cmdLine = fmt.Sprintf("%s%s%s%s", cmdLine, "source ", myRule.SrcPrefix, " ")
+    }
+    if (myRule.Port != "") {
+        cmdLine = fmt.Sprintf("%s%s%s%s", cmdLine, "port ", myRule.Port, " ")
+    }
+    if (myRule.SrcPort != "") {
+        cmdLine = fmt.Sprintf("%s%s%s%s", cmdLine, "source-port ", myRule.SrcPort, " ")
+    }
+    if (myRule.DstPort != "") {
+        cmdLine = fmt.Sprintf("%s%s%s%s", cmdLine, "destination-port ", myRule.DstPort, " ")
+    }
+    if (myRule.TcpFlags != "") {
+        cmdLine = fmt.Sprintf("%s%s%s%s", cmdLine, "tcp-flags ", myRule.TcpFlags, " ")
+    }
+    if (myRule.IcmpType != "") {
+        cmdLine = fmt.Sprintf("%s%s%s%s", cmdLine, "icmp-type ", myRule.IcmpType, " ")
+    }
+    if (myRule.IcmpCode != "") {
+        cmdLine = fmt.Sprintf("%s%s%s%s", cmdLine, "icmp-code ", myRule.IcmpCode, " ")
+    }
+    if (myRule.ProtoNumber != "") {
+        cmdLine = fmt.Sprintf("%s%s%s%s", cmdLine, "protocol ", myRule.ProtoNumber, " ")
+    }
+    if (myRule.PacketLen != "") {
+        cmdLine = fmt.Sprintf("%s%s%s%s", cmdLine, "packet-length ", myRule.PacketLen, " ")
+    }
+    if (myRule.Dscp != "") {
+        cmdLine = fmt.Sprintf("%s%s%s%s", cmdLine, "dscp ", myRule.Dscp, " ")
+    }
+    if (myRule.IpFrag != "") {
+        cmdLine = fmt.Sprintf("%s%s%s%s", cmdLine, "fragment ", myRule.IpFrag, " ")
+    }
+    // extended com
+    cmdLine = fmt.Sprintf("%s%s", cmdLine, "then ")
+    if (myRule.Action == "Drop"){
+        cmdLine = fmt.Sprintf("%s%s", cmdLine, "discard")
+    } else if (myRule.Action == "Shape") {
+        cmdLine = fmt.Sprintf("%s%s%s", cmdLine, "rate-limit ", myRule.ActSisterValue)
+    } else if (myRule.Action == "Marking") {
+        cmdLine = fmt.Sprintf("%s%s%s", cmdLine, "mark ", myRule.ActSisterValue)
+    } else if (myRule.Action == "Redirect") {
+        cmdLine = fmt.Sprintf("%s%s%s", cmdLine, "redirect ", myRule.ActSisterValue)
+    }
+    return cmdLine
+}

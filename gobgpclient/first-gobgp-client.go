@@ -9,10 +9,7 @@ import (
     api "github.com/osrg/gobgp/api"
     "github.com/osrg/gobgp/table"
     "github.com/therecipe/qt/widgets"
-    // "github.com/osrg/gobgp/client"
     "github.com/osrg/gobgp/gobgp/cmd"
-    // "github.com/osrg/gobgp/packet/bgp"
-    // "github.com/osrg/gobgp/table"
 )
 
 // data strcutures used by both API functions and UI
@@ -210,9 +207,16 @@ func showRouteToItem(pathList []*table.Path, myTree *widgets.QTreeWidget) {
 }
 
 
-func PushNewFlowSpecPath(client api.GobgpApiClient, myCommand string) {
+func PushNewFlowSpecPath(client api.GobgpApiClient, myCommand string, myAddrFam string) ([]byte, error) {
+    if (myAddrFam == "IPv4") {
         path, _ := cmd.ParsePath(bgp.RF_FS_IPv4_UC, strings.Split(myCommand, " "))
-        addFlowSpecPath(client, []*table.Path{path})
+        return(addFlowSpecPath(client, []*table.Path{path}))
+    }
+    if (myAddrFam == "IPv6") {
+        path, _ := cmd.ParsePath(bgp.RF_FS_IPv6_UC, strings.Split(myCommand, " "))
+        return(addFlowSpecPath(client, []*table.Path{path}))
+    }
+    return nil, nil
 }
 
 
