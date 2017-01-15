@@ -12,26 +12,7 @@ import (
     "github.com/osrg/gobgp/gobgp/cmd"
 )
 
-// data strcutures used by both API functions and UI
-// BGP flowspec update structure as exported from UI
 
-type BgpFsRule struct {
-    DstPrefix string
-    SrcPrefix string
-    AddrFam string
-    Port string
-    SrcPort string
-    DstPort string
-    TcpFlags string
-    IcmpType string
-    IcmpCode string
-    ProtoNumber string
-    PacketLen string
-    Dscp string
-    IpFrag string
-    Action string
-    ActSisterValue string
-}
 
 func formatTimedelta(d int64) string {
     u := uint64(d)
@@ -237,3 +218,5 @@ func addFlowSpecPath(client api.GobgpApiClient, pathList []*table.Path) ([]byte,
     }
     return uuid, nil
 }
+
+

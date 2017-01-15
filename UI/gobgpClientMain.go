@@ -7,30 +7,52 @@ package main
 
 import (
     "os"
+    "os/user"
     "time"
     "fmt"
-
-   "github.com/therecipe/qt/core"
-   "github.com/therecipe/qt/gui"
-   "github.com/therecipe/qt/widgets"
+    "log"
+    "io/ioutil"
+    "encoding/json"
+    "github.com/therecipe/qt/core"
+    "github.com/therecipe/qt/gui"
+    "github.com/therecipe/qt/widgets"
     api "github.com/osrg/gobgp/api"
     bgpcli "github.com/Matt-Texier/local-mitigation-agent/gobgpclient"
     "google.golang.org/grpc"
 )
 
+// data strcutures used by both API functions and UI
+// BGP flowspec update structure as exported from UI
 
-var BgpFsActivLib = []bgpcli.BgpFsRule{
-    {DstPrefix: "1.1.1.1/32", SrcPrefix: "2.2.2.2/32", AddrFam: "IPv4", Port: "=8080",
-     SrcPort: "=80", DstPort: "=443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "=6",
-     PacketLen: ">1024", Dscp: "=22", IpFrag: "", Action: "",},
-    {DstPrefix: "3.3.3.3/32", SrcPrefix: "4.4.4.4/32", AddrFam: "IPv4", Port: "=8080",
-     SrcPort: "<80", DstPort: ">443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "=6",
-     PacketLen: "<=1024", Dscp: "=22", IpFrag: "", Action: "",},
-    {DstPrefix: "5.5.5.5/32", SrcPrefix: "6.6.6.6/32", AddrFam: "IPv4", Port: ">=8080",
-     SrcPort: ">=80", DstPort: ">=443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "=6 =8",
-     PacketLen: "=1024", Dscp: ">=22&<=55", IpFrag: "", Action: "",},
+type BgpFsRule struct {
+    DstPrefix       string
+    SrcPrefix       string
+    AddrFam         string
+    Port            string
+    SrcPort         string
+    DstPort         string
+    TcpFlags        string
+    IcmpType        string
+    IcmpCode        string
+    ProtoNumber     string
+    PacketLen       string
+    Dscp            string
+    IpFrag          string
+    Action          string
+    ActSisterValue  string
 }
 
+var BgpFsActivLib = []BgpFsRule{
+    // {DstPrefix: "1.1.1.1/32", SrcPrefix: "2.2.2.2/32", AddrFam: "IPv4", Port: "=8080",
+    //  SrcPort: "=80", DstPort: "=443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "=6",
+    //  PacketLen: ">1024", Dscp: "=22", IpFrag: "", Action: "Drop",},
+    // {DstPrefix: "3.3.3.3/32", SrcPrefix: "4.4.4.4/32", AddrFam: "IPv4", Port: "=8080",
+    //  SrcPort: "<80", DstPort: ">443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "=6",
+    //  PacketLen: "<=1024", Dscp: "=22", IpFrag: "", Action: "Drop",},
+    // {DstPrefix: "5.5.5.5/32", SrcPrefix: "6.6.6.6/32", AddrFam: "IPv4", Port: ">=8080",
+    //  SrcPort: ">=80", DstPort: ">=443", TcpFlags: "syn", IcmpType: "", IcmpCode: "", ProtoNumber: "=6 =8",
+    //  PacketLen: "=1024", Dscp: ">=22&<=55", IpFrag: "", Action: "Drop",},
+}
 
 const (
     FS_ACT_DROP int = iota
@@ -187,7 +209,7 @@ func consoleWin() {
 
     consoleWindow = widgets.NewQMainWindow(nil, 0)
     consoleWindow.SetGeometry(core.NewQRect4(100, 100, 1000, 600))
-    consoleWindow.SetWindowTitle("GoBGP Console")
+    consoleWindow.SetWindowTitle("Gabu - GoBGP Console")
     var consoleWindowCentralWidget = widgets.NewQWidget(nil, 0)
     var consoleWindowCentralWidgetLayout = widgets.NewQHBoxLayout()
     consoleWindowCentralWidgetLayout.SetSpacing(6)
@@ -329,7 +351,7 @@ func flowspecWin() {
 //    flowspecWindow.Layout().DestroyQObject()
     var flowspecCentralWid = widgets.NewQWidget(nil, 0)
     flowspecWindow.SetGeometry(core.NewQRect4(100, 100, 1000, 800))
-    flowspecWindow.SetWindowTitle("Flowspec Configuration")
+    flowspecWindow.SetWindowTitle("Gabu - Flowspec tool")
     var flowspecWindowLayout = widgets.NewQVBoxLayout()
     flowspecWindowLayout.SetSpacing(6)
     flowspecWindowLayout.SetContentsMargins(11, 11, 11, 11)
@@ -386,6 +408,8 @@ func flowspecWin() {
     editRuleLibButtonFrameLayout.AddWidget(editRuleLibPushRibButton, 0, 2, 0)
     // wire push button
     editRuleLibPushRibButton.ConnectClicked(func(_ bool) {editRuleLibPushRibButtonFunc()})
+    editRuleLibSaveButton.ConnectClicked(func(_ bool) {editRuleLibSaveButtonFunc()})
+    editRuleLibLoadButton.ConnectClicked(func(_ bool) {editRuleLibLoadButtonFunc(editRuleTree)})
 
     // Edit rule widget creation: it includes all required
     // UI Widget to edit a BGP flowspec rule
@@ -745,7 +769,7 @@ func ribAddrFamIpv6Func(checked bool) {
 // function called when load rib button clicked
 
 func ribManipLoadRibFunc(myTree *widgets.QTreeWidget) {
-    cleanupRibTree(myTree)
+    cleanupTree(myTree)
     bgpcli.FlowSpecRibFulfillTree(client, myTree, ribActiveFamily)
 }
 
@@ -758,7 +782,7 @@ func flowspecWindowClosed(event *gui.QCloseEvent, myDock *widgets.QDockWidget){
 
 // Copy the content of a flowspec rule structure into a TreeItem widget
 
-func createFullfilItemWithRule(ty int, myTree *widgets.QTreeWidget, myRule bgpcli.BgpFsRule) {
+func createFullfilItemWithRule(ty int, myTree *widgets.QTreeWidget, myRule BgpFsRule) {
     var myItem = widgets.NewQTreeWidgetItem3(myTree, ty)
     myItem.SetText(0, myRule.AddrFam)
     myItem.SetText(1, myRule.DstPrefix)
@@ -777,7 +801,7 @@ func createFullfilItemWithRule(ty int, myTree *widgets.QTreeWidget, myRule bgpcl
     myItem.SetText(14, myRule.ActSisterValue)
 }
 
-func fullfilItemWithRule(ty int, myItem *widgets.QTreeWidgetItem, myRule bgpcli.BgpFsRule) {
+func fullfilItemWithRule(ty int, myItem *widgets.QTreeWidgetItem, myRule BgpFsRule) {
     myItem.SetText(0, myRule.AddrFam)
     myItem.SetText(1, myRule.DstPrefix)
     myItem.SetText(2, myRule.SrcPrefix)
@@ -795,13 +819,13 @@ func fullfilItemWithRule(ty int, myItem *widgets.QTreeWidgetItem, myRule bgpcli.
     myItem.SetText(14, myRule.ActSisterValue)
 }
 
-func fullfilTreeWithRuleLib(myTree *widgets.QTreeWidget, myRuleLib []bgpcli.BgpFsRule) {
+func fullfilTreeWithRuleLib(myTree *widgets.QTreeWidget, myRuleLib []BgpFsRule) {
     for i, myRule := range myRuleLib {
         createFullfilItemWithRule(i, myTree, myRule)
     }
 }
 
-func cleanupRibTree(myTree *widgets.QTreeWidget) {
+func cleanupTree(myTree *widgets.QTreeWidget) {
     if (myTree.TopLevelItemCount() != 0) {
         maxItem := myTree.TopLevelItemCount()
         for i := (maxItem-1); i >= 0; i-- {
@@ -810,7 +834,7 @@ func cleanupRibTree(myTree *widgets.QTreeWidget) {
     }
 }
 
-func fullfilLineEditWithBgpFs(myRule bgpcli.BgpFsRule) {
+func fullfilLineEditWithBgpFs(myRule BgpFsRule) {
     if(myRule.AddrFam == "IPv4") {
         editAddrFamIpv4.SetChecked(true)
         editAddrFamIpv6.SetChecked(false)
@@ -870,7 +894,7 @@ func editRuleLibItemSelected(myItem *widgets.QTreeWidgetItem, column int) {
 // function to manage glob push button
 
 func editGlobButtonNewFunc() {
-    var myFsRule bgpcli.BgpFsRule
+    var myFsRule BgpFsRule
     myFsRule.DstPrefix = "New"
     myFsRule.AddrFam = "IPv4"
     myFsRule.Action = "Drop"
@@ -903,7 +927,6 @@ func editGlobButtonDeleteFunc() {
 }
 
 func editGlobButtonResetFunc() {
-    fmt.Printf("Reset button\n")
     editRuleSrcPrefixLineEdit.SetText("")
     editRuleDstPrefixLineEdit.SetText("")
     editRuleIcmpTypeLineEdit.SetText("")
@@ -950,6 +973,7 @@ func editRuleLibPushRibButtonFunc() {
         if (sanityCheckBeforePush(BgpFsActivLib[index] ,flowspecWindow)) {
             myCommandLine := buildCommandFromFsRule(BgpFsActivLib[index])
             fmt.Printf("Commande: %s\n", myCommandLine)
+            bgpcli.PushNewFlowSpecPath(client, myCommandLine, BgpFsActivLib[index].AddrFam)
         } else {
             return
         }
@@ -961,7 +985,7 @@ func editRuleLibPushRibButtonFunc() {
 }
 
 
-func sanityCheckBeforePush(myRule bgpcli.BgpFsRule, parentWidget widgets.QWidget_ITF) bool {
+func sanityCheckBeforePush(myRule BgpFsRule, parentWidget widgets.QWidget_ITF) bool {
     var nlriOk bool = false
     var extComOk bool = false
     var errorQMessageBox string = ""
@@ -990,7 +1014,7 @@ func sanityCheckBeforePush(myRule bgpcli.BgpFsRule, parentWidget widgets.QWidget
     }
 }
 
-func buildCommandFromFsRule(myRule bgpcli.BgpFsRule) string {
+func buildCommandFromFsRule(myRule BgpFsRule) string {
     var cmdLine string = "match "
     // nlri
     if (myRule.DstPrefix != "") {
@@ -1042,3 +1066,54 @@ func buildCommandFromFsRule(myRule bgpcli.BgpFsRule) string {
     }
     return cmdLine
 }
+
+func editRuleLibSaveButtonFunc() {
+    var libFileName string
+    usr, err := user.Current()
+    if err != nil {
+        log.Fatal( err )
+    }
+    myFileBox := widgets.NewQFileDialog2(flowspecWindow, "Save Flowspec Lib", usr.HomeDir, "*.fslib")
+    myFileBox.SetDefaultSuffix("*.fslib")
+    libFileName = myFileBox.GetSaveFileName(flowspecWindow, "Save Flowspec Lib", usr.HomeDir, "*.fslib", "*.fslib", 0)
+    // libFileName = widgets.QFileDialog_GetSaveFileName(flowspecWindow, "Save Flowspec Lib", usr.HomeDir, "*.fslib", "*.fslib", 0)
+    saveFsLibJsonFile(libFileName)
+}
+
+func saveFsLibJsonFile(myFile string) error {
+    if (myFile != "") {
+    byteBuffer, _ := json.Marshal(BgpFsActivLib)
+    return(ioutil.WriteFile(myFile, byteBuffer, 0644))
+    }
+    return nil
+}
+
+func editRuleLibLoadButtonFunc(myTree *widgets.QTreeWidget) {
+    var libFileName string
+    usr, err := user.Current()
+    if err != nil {
+        log.Fatal( err )
+    }
+    myFileBox := widgets.NewQFileDialog2(flowspecWindow, "Load Flowspec Lib", usr.HomeDir, "*.fslib")
+    myFileBox.SetDefaultSuffix("*.fslib")
+    libFileName = myFileBox.GetOpenFileName(flowspecWindow, "Load Flowspec Lib", usr.HomeDir, "*.fslib", "*.fslib", 0)
+    BgpFsActivLib = nil // makes BgpFsActiveLib eligeable for garbage collection
+    cleanupTree(myTree)
+    openFsLibJsonFile(libFileName, &BgpFsActivLib, myTree )
+    editGlobButtonResetFunc()
+}
+
+func openFsLibJsonFile(myFile string, myRules *[]BgpFsRule, myTree *widgets.QTreeWidget) error {
+    if (myFile != "") {
+        data, err := ioutil.ReadFile(myFile)
+        if (err == nil) {
+            json.Unmarshal(data, myRules)
+            fullfilTreeWithRuleLib(myTree, *myRules)
+            return nil
+        } else {
+            return err
+        }
+    }
+    return nil
+}
+
