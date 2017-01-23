@@ -18,7 +18,7 @@ The UI is using a Qt binding for Golang: https://github.com/therecipe/qt
 
 BGP protocol stack: https://github.com/osrg/gobgp
 
-## Use this tool in your network
+## Using this tool in your network
 
 This tool provides a BGP route reflector (RR using GoBGP as BGP stack) with an UI to inject BGP flowspec updates. The BGP RR propagates those updates to all its peers. In the current version, the UI can only connect to a local Go BGP daemon and doesn't support BGP clustering. The UI is using the gRPC API to interface GoBGP.
 
