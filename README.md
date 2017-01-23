@@ -29,7 +29,7 @@ GoBGP needs to be installed manually (not yet via the UI). All neighbors have to
 You will have to create a VM or use a bare metal server, install the OS of your choice (software has been developed on ubuntu server), install all dependencies (mainly Qt / GoBGP / Unity) and you are ready to go. Make sure that your server is using is reachable to all BGP neighbors.
 
 # Tutorial and features
-* [Basic main window](https://github.com/Matt-Texier/local-mitigation-agent/docs/main_win.md)
+* [Basic main window](https://github.com/Matt-Texier/local-mitigation-agent/blob/master/docs/main_win.md)
 * Flowspec window
 * Console window
 
