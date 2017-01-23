@@ -1,3 +1,17 @@
+// Copyright 2017 PRAGMA INNOVATION
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Provide UI for the whole tool
 // There is a main window looking a bit like a dock
 // with push buttons opening each window managing each
@@ -13,6 +27,7 @@ import (
     "log"
     "io/ioutil"
     "encoding/json"
+    "strings"
     "github.com/therecipe/qt/core"
     "github.com/therecipe/qt/gui"
     "github.com/therecipe/qt/widgets"
@@ -111,6 +126,7 @@ var (
     AddrFamilyIpv6Checked bool
 )
 
+var ribRadioFamilychecked string = "ipv4-flowspec"
 var ribActiveFamily string = "ipv4-flowspec"
 
 var (
@@ -654,6 +670,7 @@ func flowspecWin() {
         editGlobButtonApply = widgets.NewQPushButton2("Apply", editRuleGlobButtonFrame)
         editGlobButtonReset = widgets.NewQPushButton2("Reset", editRuleGlobButtonFrame)
         editGlobButtonDelete = widgets.NewQPushButton2("Delete", editRuleGlobButtonFrame)
+        editGlobButtonDuplicate = widgets.NewQPushButton2("Duplicate", editRuleGlobButtonFrame)
 
     )
     editRuleGlobButtonFrame.SetFrameShape(widgets.QFrame__Panel)
@@ -662,6 +679,7 @@ func flowspecWin() {
     editRuleGlobButtonlayout.AddWidget(editGlobButtonApply, 0, 1, 0)
     editRuleGlobButtonlayout.AddWidget(editGlobButtonReset, 0, 2, 0)
     editRuleGlobButtonlayout.AddWidget(editGlobButtonDelete, 0, 3, 0)
+    editRuleGlobButtonlayout.AddWidget(editGlobButtonDuplicate, 0, 4, 0)
 
     // var editRuleMainWidSpacer = widgets.NewQSpacerItem(20, 40, widgets.QSizePolicy__Fixed, widgets.QSizePolicy__Expanding)
     // editRuleMainWidLayout.AddItem(editRuleMainWidSpacer)
@@ -674,6 +692,7 @@ func flowspecWin() {
     editGlobButtonNew.ConnectClicked(func(_ bool) { editGlobButtonNewFunc() })
     editGlobButtonDelete.ConnectClicked(func(_ bool) { editGlobButtonDeleteFunc() })
     editGlobButtonReset.ConnectClicked(func(_ bool) { editGlobButtonResetFunc() })
+    editGlobButtonDuplicate.ConnectClicked(func(_ bool) { editGlobButtonDuplicateFunc() })
 
     // widget of the Rib tool dock
     var ribManipDock = widgets.NewQDockWidget("FlowSpec RIB tool", flowspecWindow, 0)
@@ -718,8 +737,9 @@ func flowspecWin() {
     ribAddrFamIpv4.ConnectClicked(ribAddrFamIpv4Func)
     ribAddrFamIpv6.ConnectClicked(ribAddrFamIpv6Func)
 
-    // wire push buttons of the dock
+    // wire load RIB and delete RIB buttons of the dock
     ribManipLoadButton.ConnectClicked(func(_ bool) {ribManipLoadRibFunc(ribContentTree)})
+    ribManipDeleteRuleButton.ConnectClicked(func(_ bool) {ribManipDeleteRuleButtonFunc(ribContentTree)})
 
     ribManipDock.SetWidget(ribManipDockWid)
     ribManipDock.SetFeatures(widgets.QDockWidget__DockWidgetFloatable | widgets.QDockWidget__DockWidgetMovable)
@@ -759,18 +779,40 @@ func editAddrFamIpv6Func(checked bool) {
 // func called when IPv4 or IPv6 RIB radio button are checked
 
 func ribAddrFamIpv4Func(checked bool) {
-    ribActiveFamily = "ipv4-flowspec"
+    ribRadioFamilychecked = "ipv4-flowspec"
 }
 
 func ribAddrFamIpv6Func(checked bool) {
-    ribActiveFamily = "ipv6-flowspec"
+    ribRadioFamilychecked = "ipv6-flowspec"
 }
 
 // function called when load rib button clicked
 
 func ribManipLoadRibFunc(myTree *widgets.QTreeWidget) {
     cleanupTree(myTree)
-    bgpcli.FlowSpecRibFulfillTree(client, myTree, ribActiveFamily)
+    bgpcli.FlowSpecRibFulfillTree(client, myTree, ribRadioFamilychecked)
+    ribActiveFamily = ribRadioFamilychecked
+}
+
+func ribManipDeleteRuleButtonFunc(myTree *widgets.QTreeWidget) {
+    var myItem *widgets.QTreeWidgetItem = nil
+    var myNlri string
+    var myExtCom string
+    var deleteCmdPath string
+    myItem = myTree.CurrentItem()
+    index := myTree.IndexOfTopLevelItem(myItem)
+    myNlri = myItem.Text(0)
+    myExtCom = myItem.Text(1)
+    deleteCmdPath = fmt.Sprintf("match %sthen %s", formatNlriOutputToDeleteCmdNlri(myNlri), formatExtComOutputToDeleteCmdExtCom(myExtCom))
+
+    if (index == -1) {
+        return
+    }
+    bgpcli.DeleteFlowSpecPath(client, deleteCmdPath, ribActiveFamily)
+    if(index >= 0 && index < myTree.TopLevelItemCount()) {
+        myItem = myTree.TakeTopLevelItem(index)
+    }
+    return
 }
 
 // function called when window get closed
@@ -922,7 +964,6 @@ func editGlobButtonDeleteFunc() {
      if(index >= 0 && index < editRuleTree.TopLevelItemCount()) {
         myItem = editRuleTree.TakeTopLevelItem(index)
      }
-    // fmt.Printf("index: %d\n", index)
     BgpFsActivLib = append(BgpFsActivLib[:index], BgpFsActivLib[index+1:]...)
 }
 
@@ -943,6 +984,30 @@ func editGlobButtonResetFunc() {
     editRuleActionCombo.SetCurrentIndex(0)
 }
 
+func editGlobButtonDuplicateFunc() {
+    var myFsRule BgpFsRule
+    var myItem *widgets.QTreeWidgetItem
+
+    myItem = editRuleTree.CurrentItem()
+    index := editRuleTree.IndexOfTopLevelItem(myItem)
+    myFsRule.AddrFam = BgpFsActivLib[index].AddrFam
+    myFsRule.SrcPrefix = BgpFsActivLib[index].SrcPrefix
+    myFsRule.DstPrefix = BgpFsActivLib[index].DstPrefix
+    myFsRule.IcmpType = BgpFsActivLib[index].IcmpType
+    myFsRule.IcmpCode = BgpFsActivLib[index].IcmpCode
+    myFsRule.ProtoNumber = BgpFsActivLib[index].ProtoNumber
+    myFsRule.Port = BgpFsActivLib[index].Port
+    myFsRule.SrcPort = BgpFsActivLib[index].SrcPort
+    myFsRule.DstPort = BgpFsActivLib[index].DstPort
+    myFsRule.TcpFlags = BgpFsActivLib[index].TcpFlags
+    myFsRule.PacketLen = BgpFsActivLib[index].PacketLen
+    myFsRule.Dscp = BgpFsActivLib[index].Dscp
+    myFsRule.IpFrag = BgpFsActivLib[index].IpFrag
+    myFsRule.Action = BgpFsActivLib[index].Action
+    myFsRule.ActSisterValue = BgpFsActivLib[index].ActSisterValue
+    BgpFsActivLib = append(BgpFsActivLib, myFsRule)
+    createFullfilItemWithRule(len(BgpFsActivLib)-1, editRuleTree, BgpFsActivLib[len(BgpFsActivLib)-1])
+}
 
 func editRuleActionComboFunc(myLine *widgets.QLineEdit, myIndex int) {
     switch flowSpecActStrings[myIndex] {
@@ -972,7 +1037,6 @@ func editRuleLibPushRibButtonFunc() {
         index := editRuleTree.IndexOfTopLevelItem(myItem)
         if (sanityCheckBeforePush(BgpFsActivLib[index] ,flowspecWindow)) {
             myCommandLine := buildCommandFromFsRule(BgpFsActivLib[index])
-            fmt.Printf("Commande: %s\n", myCommandLine)
             bgpcli.PushNewFlowSpecPath(client, myCommandLine, BgpFsActivLib[index].AddrFam)
         } else {
             return
@@ -1117,3 +1181,37 @@ func openFsLibJsonFile(myFile string, myRules *[]BgpFsRule, myTree *widgets.QTre
     return nil
 }
 
+
+func formatNlriOutputToDeleteCmdNlri(myNlri string) string {
+    var nlriCmdDelete string
+    nlriCmdDelete = myNlri
+    nlriCmdDelete = strings.Replace(nlriCmdDelete, "[", "", -1)
+    nlriCmdDelete = strings.Replace(nlriCmdDelete, "]", " ", -1)
+    nlriCmdDelete = strings.Replace(nlriCmdDelete, "destination:", "destination ", -1)
+    nlriCmdDelete = strings.Replace(nlriCmdDelete, "source:", "source ", -1)
+    nlriCmdDelete = strings.Replace(nlriCmdDelete, "port: ", "port ", -1)
+    nlriCmdDelete = strings.Replace(nlriCmdDelete, "source-port: ", "source-port ", -1)
+    nlriCmdDelete = strings.Replace(nlriCmdDelete, "destination-port: ", "destination-port ", -1)
+    nlriCmdDelete = strings.Replace(nlriCmdDelete, "tcp-flags: ", "tcp-flags ", -1)
+    nlriCmdDelete = strings.Replace(nlriCmdDelete, "icmp-type: ", "icmp-type ", -1)
+    nlriCmdDelete = strings.Replace(nlriCmdDelete, "icmp-code: ", "icmp-code ", -1)
+    nlriCmdDelete = strings.Replace(nlriCmdDelete, "protocol: ", "protocol ", -1)
+    nlriCmdDelete = strings.Replace(nlriCmdDelete, "packet-length: ", "packet-length ", -1)
+    nlriCmdDelete = strings.Replace(nlriCmdDelete, "dscp: ", "dscp ", -1)
+    nlriCmdDelete = strings.Replace(nlriCmdDelete, "fragment: ", "fragment ", -1)
+    return nlriCmdDelete
+}
+
+func formatExtComOutputToDeleteCmdExtCom(myExtCom string) string {
+    var extComCmdDelete string
+    extComCmdDelete = myExtCom
+    extComCmdDelete = strings.Replace(extComCmdDelete, "[{Origin: ?} {", "", -1)
+    extComCmdDelete = strings.Replace(extComCmdDelete, "}]", "", -1)
+    extComCmdDelete = strings.Replace(extComCmdDelete, "Extcomms: [", "", -1)
+    extComCmdDelete = strings.Replace(extComCmdDelete, "]", "", -1)
+    extComCmdDelete = strings.Replace(extComCmdDelete, "discard", "discard", -1)
+    extComCmdDelete = strings.Replace(extComCmdDelete, "rate-limit: ", "rate-limit ", -1)
+    extComCmdDelete = strings.Replace(extComCmdDelete, "mark: ", "mark ", -1)
+    extComCmdDelete = strings.Replace(extComCmdDelete, "redirect: ", "redirect ", -1)
+    return extComCmdDelete
+}

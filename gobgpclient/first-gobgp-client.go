@@ -1,3 +1,17 @@
+// Copyright 2017 PRAGMA INNOVATION
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package gobgpclient
 
 import (
@@ -39,7 +53,6 @@ func TxtdumpGetNeighbor(client api.GobgpApiClient) []string {
     var NeighReq api.GetNeighborRequest
     NeighResp, e := client.GetNeighbor(context.Background(), &NeighReq)
     if e != nil {
-        fmt.Println(e)
         return dumpResult
     }
     m := NeighResp.Peers
@@ -138,8 +151,7 @@ func FlowSpecRibFulfillTree (client api.GobgpApiClient, myTree *widgets.QTreeWid
 
 
 func showRouteToItem(pathList []*table.Path, myTree *widgets.QTreeWidget) {
-
-    maxPrefixLen := 50
+    maxPrefixLen := 100
     maxNexthopLen := 20
 
     now := time.Now()
@@ -177,10 +189,6 @@ func showRouteToItem(pathList []*table.Path, myTree *widgets.QTreeWidget) {
         myItem.SetText(1, pattrstr)
         myItem.SetText(2, age)
         myItem.SetText(3, nexthop)
-        // fmt.Printf("nlri: %s\n", nlri)
-        // fmt.Printf("nexthop: %s\n", nexthop)
-        // fmt.Printf("pattrstr: %s\n", pattrstr)
-        // fmt.Printf("Age: %s\n", age)
     }
     for i := 0; i < 4; i++ {
         myTree.ResizeColumnToContents(i)
@@ -219,4 +227,73 @@ func addFlowSpecPath(client api.GobgpApiClient, pathList []*table.Path) ([]byte,
     return uuid, nil
 }
 
+func DeleteFlowSpecPath(client api.GobgpApiClient, myCommand string, myAddrFam string) (error) {
+    if (myAddrFam == "ipv4-flowspec") {
+        path, _ := cmd.ParsePath(bgp.RF_FS_IPv4_UC, strings.Split(myCommand, " "))
+        return(deleteFlowSpecPath(client, bgp.RF_FS_IPv4_UC, nil, []*table.Path{path}))
+    }
+    if (myAddrFam == "ipv6-flowspec") {
+        myCmdInStrings := strings.Split(myCommand, " ")
+        getRidOfPrefixLenght(myCmdInStrings)
+        path, _ := cmd.ParsePath(bgp.RF_FS_IPv6_UC, myCmdInStrings)
+        return(deleteFlowSpecPath(client, bgp.RF_FS_IPv6_UC, nil, []*table.Path{path}))
+    }
+    return nil
+}
 
+
+func deleteFlowSpecPath(client api.GobgpApiClient, f bgp.RouteFamily, uuid []byte, pathList []*table.Path) error {
+    var reqs []*api.DeletePathRequest
+    var vrfID = ""
+    resource := api.Resource_GLOBAL
+    switch {
+        case len(pathList) != 0:
+            for _, path := range pathList {
+              nlri := path.GetNlri()
+              n, err := nlri.Serialize()
+              if err != nil {
+                  return err
+               }
+               p := &api.Path{
+                    Nlri:   n,
+                   Family: uint32(path.GetRouteFamily()),
+                }
+              reqs = append(reqs, &api.DeletePathRequest{
+                    Resource: resource,
+                    VrfId:    vrfID,
+                    Path:     p,
+                })
+            }
+        default:
+            reqs = append(reqs, &api.DeletePathRequest{
+                Resource: resource,
+                VrfId:    vrfID,
+                Uuid:     uuid,
+                Family:   uint32(f),
+            })
+        }
+
+        for _, req := range reqs {
+            if _, err := client.DeletePath(context.Background(), req); err != nil {
+                return err
+        }
+    }
+    return nil
+}
+
+func getRidOfPrefixLenght(myStrings []string) {
+    var ipv6NextString bool = false
+    for i, myString := range myStrings {
+        if ipv6NextString {
+            // I need to get rid of the last /value prefix lenght
+            // as it is not supported by delete path API
+            ipv6InPieces := strings.Split(myString, "/")
+            myString = fmt.Sprintf("%s/%s", ipv6InPieces[0], ipv6InPieces[1])
+            myStrings[i] = myString
+            ipv6NextString = false
+        }
+        if (myString == "destination") || (myString == "source") {
+            ipv6NextString = true
+        }
+    }
+}
