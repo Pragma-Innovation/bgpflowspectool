@@ -30,7 +30,7 @@ You will have to create a VM or use a bare metal server, install the OS of your 
 
 # Tutorial and features
 * [Basic main window](https://github.com/Matt-Texier/local-mitigation-agent/blob/master/docs/main_win.md)
-* Flowspec window
+* [Flowspec window](https://github.com/Matt-Texier/local-mitigation-agent/blob/master/docs/flowspec_win.md)
 * Console window
 
 # Install and configure your development machine 
