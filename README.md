@@ -22,13 +22,17 @@ BGP protocol stack: https://github.com/osrg/gobgp
 
 This tool provides a BGP route reflector (RR using GoBGP as BGP stack) with an UI to inject BGP flowspec updates. The BGP RR propagates those updates to all its peers. In the current version, the UI can only connect to a local Go BGP daemon and doesn't support BGP clustering. The UI is using the gRPC API to interface GoBGP.
 
-GoBGP needs to be installed manually (not yet via the UI). All neighbors have to be configured in the GoBGP configuration file. Once the GoBGP daemon is running, you launch the application. The UI will connect to the BGP daemon and it is ready to push BGP flowspec updates to the BGP daemon.
+GoBGP needs to be installed manually (not yet via the UI). All neighbors have to be configured in the GoBGP configuration file. Once the GoBGP daemon is running, you launch the application. The UI will then connect to the BGP daemon and will be ready to push BGP flowspec updates to all involved neighbors.
 
 ## Typical configuration
 
 You will have to create a VM or use a bare metal server, install the OS of your choice (software has been developed on ubuntu server), install all dependencies (mainly Qt / GoBGP / Unity) and you are ready to go. Make sure that your server is using is reachable to all BGP neighbors.
 
 # Tutorial and features
+## main window
+## Flowspec window
+## Console window
+# Install and configure you development machine 
 
 # Licensing
 
