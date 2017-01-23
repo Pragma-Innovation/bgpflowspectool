@@ -14,9 +14,9 @@ This first version is currently Alpha and needs to go through a set of test to m
 
 This tool is relying on two open source software and related API.
 
-The UI is using a Qt binding for Golang: https://github.com/therecipe/qt
+* The UI is using a Qt binding for Golang: https://github.com/therecipe/qt
 
-BGP protocol stack: https://github.com/osrg/gobgp
+* BGP protocol stack: https://github.com/osrg/gobgp
 
 ## Using this tool in your network
 
