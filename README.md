@@ -33,7 +33,7 @@ You will have to create a VM or use a bare metal server, install the OS of your 
 * Flowspec window
 * Console window
 
-# Install and configure you development machine 
+# Install and configure your development machine 
 
 # Licensing
 
