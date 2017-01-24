@@ -167,7 +167,7 @@ func main() {
     widgets.NewQApplication(len(os.Args), os.Args)
     var toolbarWindow = widgets.NewQMainWindow(nil, 0)
     toolbarWindow.SetGeometry(core.NewQRect4(100, 100, 400, 50))
-    toolbarWindow.SetWindowTitle("Gabu")
+    toolbarWindow.SetWindowTitle("Gabu - Tool bar")
     var toolbarCentralWidget = widgets.NewQWidget(nil, 0)
     var toolbarCentralLayout = widgets.NewQHBoxLayout()
     toolbarCentralLayout.SetSpacing(6)
