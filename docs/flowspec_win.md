@@ -32,5 +32,5 @@ By pushing the delete button, you are able to delete the selected active entry.
 
 For more easier use, the RIB tool can be detached from the Flowspec main window (the RIB window is a dock window of the flowspec window).
 
-
+![Flowspec delete rib](/docs/flowspec-win-rib-delete.png)
 
