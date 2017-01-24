@@ -24,4 +24,5 @@ All rules that has been created can be saved under a file. The file format is no
 
 In order to push a rule from the library to the RIB, select it in the list of rule and push the "Push to RIB button"
 
+![Flowspec push](/docs/flowspec-win-push.png)
 
