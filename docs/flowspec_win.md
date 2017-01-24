@@ -26,3 +26,11 @@ In order to push a rule from the library to the RIB, select it in the list of ru
 
 ![Flowspec push](/docs/flowspec-win-push.png)
 
+By clicking Load / reload button of the RIB tool, you will see the active flowspec routes. Select which adress familly you would like to display.
+
+By pushing the delete button, you are able to delete the selected active entry.
+
+For more easier use, the RIB tool can be detached from the Flowspec main window (the RIB window is a dock window of the flowspec window).
+
+
+
