@@ -58,7 +58,11 @@ export QT_DIR=/home/matthieu/Qt
 export QT_VERSION=5.7.0
 PATH=/home/matthieu/Qt/5.7/gcc_64/bin:$PATH
 ```
-
+* compile the tool and launch it (to be update with your own path):
+```
+~/go-work/src/github.com/Matt-Texier/local-mitigation-agent/UI$ qtdeploy build desktop .
+~/go-work/src/github.com/Matt-Texier/local-mitigation-agent/UI$ ./deploy/linux_minimal/UI.sh
+```
 
 # Tool name and special dedicace
 
