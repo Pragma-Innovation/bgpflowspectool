@@ -31,6 +31,9 @@ You will have to create a VM or use a bare metal server, install the OS of your 
 # Tutorial and features
 * [Basic main window](https://github.com/Matt-Texier/local-mitigation-agent/blob/master/docs/main_win.md)
 * [Flowspec window](https://github.com/Matt-Texier/local-mitigation-agent/blob/master/docs/flowspec_win.md)
+
+![flowspec-win](/docs/flowspec-win.png)
+
 * [Console window](https://github.com/Matt-Texier/local-mitigation-agent/blob/master/docs/console_win.md)
 
 Next step will be about testing this tool against vendor routers.
