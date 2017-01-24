@@ -33,7 +33,29 @@ You will have to create a VM or use a bare metal server, install the OS of your 
 * [Flowspec window](https://github.com/Matt-Texier/local-mitigation-agent/blob/master/docs/flowspec_win.md)
 * [Console window](https://github.com/Matt-Texier/local-mitigation-agent/blob/master/docs/console_win.md)
 
-# Install and configure your development machine 
+Next step will be about testing this tool against vendor routers.
+
+# Install and configure your development machine
+
+* Follow the installation process of GoBGP: https://github.com/osrg/gobgp/blob/master/docs/sources/getting-started.md
+* Follow the installation process of Qt Golang binding: https://github.com/therecipe/qt
+  * Make sure that you alocated 8 GB of RAM of your VM
+* ENV variables: The following example needs to be updated acccording to your machine but here is a snippet of my .bashrc file as an example
+
+```
+# go-lang variable
+export GOPATH=/home/matthieu/go-work
+export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig
+export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
+export GOBIN=/home/matthieu/go-work/bin
+PATH=/home/matthieu/go-work/bin:$PATH
+PATH=/usr/local/go/bin:$PATH
+# qt variable
+export QT_DIR=/home/matthieu/Qt
+export QT_VERSION=5.7.0
+PATH=/home/matthieu/Qt/5.7/gcc_64/bin:$PATH
+```
+
 
 # Tool name and special dedicace
 
