@@ -66,7 +66,7 @@ PATH=/home/matthieu/Qt/5.7/gcc_64/bin:$PATH
 
 # Tool name and special dedicace
 
-This tool is named "Gabu". This name is the nickname of a brilliant young french engineer that passed away way too early and miss to anybody who crossed his way.
+This tool is named "Gabu". This name is the nickname of a brilliant young french engineer that passed away way too early and is missing to anybody who crossed his way.
 
 To enjoy a nice and still very interesting BGP flowspec presentation done by Frederic Gabut-Deloraine about the use of this protocol for DDoS mitigation, please follow this link: [Frederic FRnOG presentation](http://www.dailymotion.com/video/xtngjg_frnog-18-flowspec-frederic-gabut-deloraine-neo-telecoms_tech)
 
