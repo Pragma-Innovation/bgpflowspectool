@@ -93,60 +93,60 @@ var flowSpecActValueMap = map[string]int{
 var flowSpecActStrings = []string{"Drop", "Shape", "Redirect", "Marking"}
 
 var (
-    editAddrFamIpv4 *widgets.QRadioButton
-    editAddrFamIpv6 *widgets.QRadioButton
-    ribAddrFamIpv4 *widgets.QRadioButton
-    ribAddrFamIpv6 *widgets.QRadioButton
-    editRuleSrcPrefixLineEdit *widgets.QLineEdit
-    editRuleDstPrefixLineEdit *widgets.QLineEdit
-    editRuleIcmpTypeLineEdit *widgets.QLineEdit
-    editRuleIcmpCodeLineEdit *widgets.QLineEdit
-    editRuleIpProtoLineEdit *widgets.QLineEdit
-    editRulePortLineEdit *widgets.QLineEdit
-    editRuleSrcPortLineEdit *widgets.QLineEdit
-    editRuleDstPortLineEdit *widgets.QLineEdit
-    editRuleTcpFlagFilterLine *widgets.QLineEdit
-    editRuleLenLineEdit *widgets.QLineEdit
-    editRuleDscpLineEdit *widgets.QLineEdit
-    editRuleFragFilterLine *widgets.QLineEdit
-    editRuleActSisterValueLine *widgets.QLineEdit
-    editRuleActionCombo *widgets.QComboBox
-    editRuleTree *widgets.QTreeWidget
-    consoleWindow *widgets.QMainWindow
-    flowspecWindow *widgets.QMainWindow
+    editAddrFamIpv4             *widgets.QRadioButton
+    editAddrFamIpv6             *widgets.QRadioButton
+    ribAddrFamIpv4              *widgets.QRadioButton
+    ribAddrFamIpv6              *widgets.QRadioButton
+    editRuleSrcPrefixLineEdit   *widgets.QLineEdit
+    editRuleDstPrefixLineEdit   *widgets.QLineEdit
+    editRuleIcmpTypeLineEdit    *widgets.QLineEdit
+    editRuleIcmpCodeLineEdit    *widgets.QLineEdit
+    editRuleIpProtoLineEdit     *widgets.QLineEdit
+    editRulePortLineEdit        *widgets.QLineEdit
+    editRuleSrcPortLineEdit     *widgets.QLineEdit
+    editRuleDstPortLineEdit     *widgets.QLineEdit
+    editRuleTcpFlagFilterLine   *widgets.QLineEdit
+    editRuleLenLineEdit         *widgets.QLineEdit
+    editRuleDscpLineEdit        *widgets.QLineEdit
+    editRuleFragFilterLine      *widgets.QLineEdit
+    editRuleActSisterValueLine  *widgets.QLineEdit
+    editRuleActionCombo         *widgets.QComboBox
+    editRuleTree                *widgets.QTreeWidget
+    consoleWindow               *widgets.QMainWindow
+    flowspecWindow              *widgets.QMainWindow
 )
 
 
 var client api.GobgpApiClient
 
 var (
-    windowFlowSpecCreated bool
+    windowFlowSpecCreated   bool
     windowBgpConsoleCreated bool
-    AddrFamilyIpv4Checked bool
-    AddrFamilyIpv6Checked bool
+    addrFamilyIpv4Checked   bool
+    addrFamilyIpv6Checked   bool
 )
 
-var ribRadioFamilychecked string = "ipv4-flowspec"
-var ribActiveFamily string = "ipv4-flowspec"
+var ribRadioFamilychecked   string = "ipv4-flowspec"
+var ribActiveFamily         string = "ipv4-flowspec"
 
 var (
-    regexpIpv4Validation *core.QRegExp
-    regexpIpv6Validation *core.QRegExp
-    regexpPortValidation *core.QRegExp
-    regexpByteValueValidation *core.QRegExp
-    regexpPckLenValidation *core.QRegExp
-    regexpIpv4SrcValidator *gui.QRegExpValidator
-    regexpIpv4DstValidator *gui.QRegExpValidator
-    regexpIpv6SrcValidator *gui.QRegExpValidator
-    regexpIpv6DstValidator *gui.QRegExpValidator
-    regexpPortValidator *gui.QRegExpValidator
-    regexpSrcPortValidator *gui.QRegExpValidator
-    regexpDstPortValidator *gui.QRegExpValidator
-    regexpIcmpTypeValidator *gui.QRegExpValidator
-    regexpIcmpCodeValidator *gui.QRegExpValidator
-    regexpProtoNumValidator *gui.QRegExpValidator
-    regexpDscpValidator *gui.QRegExpValidator
-    regexpPckLenValidator *gui.QRegExpValidator
+    regexpIpv4Validation        *core.QRegExp
+    regexpIpv6Validation        *core.QRegExp
+    regexpPortValidation        *core.QRegExp
+    regexpByteValueValidation   *core.QRegExp
+    regexpPckLenValidation      *core.QRegExp
+    regexpIpv4SrcValidator      *gui.QRegExpValidator
+    regexpIpv4DstValidator      *gui.QRegExpValidator
+    regexpIpv6SrcValidator      *gui.QRegExpValidator
+    regexpIpv6DstValidator      *gui.QRegExpValidator
+    regexpPortValidator         *gui.QRegExpValidator
+    regexpSrcPortValidator      *gui.QRegExpValidator
+    regexpDstPortValidator      *gui.QRegExpValidator
+    regexpIcmpTypeValidator     *gui.QRegExpValidator
+    regexpIcmpCodeValidator     *gui.QRegExpValidator
+    regexpProtoNumValidator     *gui.QRegExpValidator
+    regexpDscpValidator         *gui.QRegExpValidator
+    regexpPckLenValidator       *gui.QRegExpValidator
 )
 
 func main() {
@@ -454,8 +454,8 @@ func flowspecWin() {
     editRuleSrcPrefixLineEdit.SetPlaceholderText("1.1.1.1/32")
     editRuleDstPrefixLineEdit.SetPlaceholderText("2.2.2.2/24")
     editAddrFamIpv4.SetChecked(true)
-    AddrFamilyIpv6Checked = false
-    AddrFamilyIpv4Checked = true
+    addrFamilyIpv6Checked = false
+    addrFamilyIpv4Checked = true
     regexpIpv6Validation = core.NewQRegExp2("^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))(\\/((1(1[0-9]|2[0-8]))|([0-9][0-9])|([0-9])))?$", core.Qt__CaseInsensitive, core.QRegExp__RegExp2)
     regexpIpv4Validation = core.NewQRegExp2("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$", core.Qt__CaseInsensitive, core.QRegExp__RegExp2)
     regexpIpv4SrcValidator = gui.NewQRegExpValidator2(regexpIpv4Validation, editRuleSrcPrefixLineEdit)
@@ -753,8 +753,8 @@ func flowspecWin() {
 // function called with IPv4 or IPv6 radiobutton from edit widget is checked
 
 func editAddrFamIpv4Func(checked bool) {
-    AddrFamilyIpv4Checked = true
-    AddrFamilyIpv6Checked = false
+    addrFamilyIpv4Checked = true
+    addrFamilyIpv6Checked = false
     editRuleSrcPrefixLineEdit.SetPlaceholderText("1.1.1.1/32")
     editRuleDstPrefixLineEdit.SetPlaceholderText("2.2.2.2/24")
     regexpIpv4SrcValidator = gui.NewQRegExpValidator2(regexpIpv4Validation, editRuleSrcPrefixLineEdit)
@@ -764,8 +764,8 @@ func editAddrFamIpv4Func(checked bool) {
 }
 
 func editAddrFamIpv6Func(checked bool) {
-    AddrFamilyIpv6Checked = true
-    AddrFamilyIpv4Checked = false
+    addrFamilyIpv6Checked = true
+    addrFamilyIpv4Checked = false
     editRuleSrcPrefixLineEdit.SetText("")
     editRuleDstPrefixLineEdit.SetText("")
     editRuleSrcPrefixLineEdit.SetPlaceholderText("2001:DB8::/32")
@@ -901,9 +901,9 @@ func fullfilLineEditWithBgpFs(myRule BgpFsRule) {
 }
 
 func fullfilBgpFsWithLineEdit(myIndex int) {
-    if (AddrFamilyIpv4Checked) {
+    if (addrFamilyIpv4Checked) {
         BgpFsActivLib[myIndex].AddrFam = "IPv4"
-    } else if (AddrFamilyIpv6Checked) {
+    } else if (addrFamilyIpv6Checked) {
         BgpFsActivLib[myIndex].AddrFam = "IPv6"
     }
     BgpFsActivLib[myIndex].SrcPrefix = editRuleSrcPrefixLineEdit.Text()
