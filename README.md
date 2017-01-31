@@ -10,6 +10,8 @@ This tool has been developed to help network engineers to deal with undesirable 
 
 This first version is currently Alpha and needs to go through a set of test to make it an usable version. For now, it only supports BGP flowspec (RFC5575). __This tool is not suppose to be installed in production network but rather be used for lab / test purposes.__
 
+__Caveats and limitations: the tool doesn't support TCP flags and Fragment flags yet (working on it)___
+
 # Building blocks and dependencies
 
 This tool is relying on two open source software and their related API's.
