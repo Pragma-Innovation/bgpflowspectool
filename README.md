@@ -44,7 +44,7 @@ Next step will be about testing this tool against router vendors.
 
 * Follow the installation process of GoBGP: https://github.com/osrg/gobgp/blob/master/docs/sources/getting-started.md
 * Follow the installation process of Qt Golang binding: https://github.com/therecipe/qt
-  * Make sure that you alocated 8 GB of RAM to your VM
+  * Make sure that you allocate 8 GB of RAM to your VM
 * ENV variables: The following example needs to be updated acccording to your machine but here is a snippet of my .bashrc file as an example
 
 ```
