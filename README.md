@@ -10,6 +10,8 @@ This tool has been developed to help network engineers to deal with undesirable 
 
 This first version is currently Alpha and needs to go through a set of test to make it an usable version. For now, it only supports BGP flowspec (RFC5575). __This tool is not suppose to be installed in production network but rather be used for lab / test purposes.__
 
+__Caveats and limitations: the tool doesn't support TCP flags and Fragment flags yet (working on it)___
+
 # Building blocks and dependencies
 
 This tool is relying on two open source software and their related API's.
@@ -26,7 +28,7 @@ GoBGP needs to be installed manually (not yet via the UI). All neighbors have to
 
 ## Typical configuration
 
-You will have to create a VM or use a bare metal server, install the OS of your choice (software has been developed on ubuntu server), install all dependencies (mainly Qt / GoBGP / Unity) and you are ready to go. Make sure that your server is using is reachable to all BGP neighbors.
+You will have to create a VM or use a bare metal server, install the OS of your choice (software has been developed on ubuntu server), install all dependencies (mainly Qt / GoBGP / Unity) and you are ready to go. Make sure that your server is using an IP address reachable to all BGP neighbors.
 
 # Tutorial and features
 * [Basic main window](https://github.com/Matt-Texier/local-mitigation-agent/blob/master/docs/main_win.md)
@@ -42,7 +44,7 @@ Next step will be about testing this tool against router vendors.
 
 * Follow the installation process of GoBGP: https://github.com/osrg/gobgp/blob/master/docs/sources/getting-started.md
 * Follow the installation process of Qt Golang binding: https://github.com/therecipe/qt
-  * Make sure that you alocated 8 GB of RAM to your VM
+  * Make sure that you allocate 8 GB of RAM to your VM
 * ENV variables: The following example needs to be updated acccording to your machine but here is a snippet of my .bashrc file as an example
 
 ```
