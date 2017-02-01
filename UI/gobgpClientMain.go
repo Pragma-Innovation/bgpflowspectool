@@ -298,20 +298,11 @@ func consoleWin() {
     cmdButtonSizePolicy.SetHeightForWidth(cmdNeighButton.HasHeightForWidth())
     cmdNeighButton.SetSizePolicy(cmdButtonSizePolicy)
 
-    var cmdFsrib4Button = widgets.NewQPushButton2("IPv4 FlowSpec RIB", cmdFrame)
-    cmdButtonSizePolicy.SetHeightForWidth(cmdFsrib4Button.HasHeightForWidth())
-    cmdFsrib4Button.SetSizePolicy(cmdButtonSizePolicy)
-
-    var cmdFsrib6Button = widgets.NewQPushButton2("IPv6 FlowSpec RIB", cmdFrame)
-    cmdButtonSizePolicy.SetHeightForWidth(cmdFsrib6Button.HasHeightForWidth())
-    cmdFsrib6Button.SetSizePolicy(cmdButtonSizePolicy)
 
     // layout for buttons
     var cmdLayout = widgets.NewQVBoxLayout()
     cmdLayout.AddWidget(cmdLabel, 0, core.Qt__AlignCenter)
     cmdLayout.AddWidget(cmdNeighButton, 0, 0)
-    cmdLayout.AddWidget(cmdFsrib4Button, 0, 0)
-    cmdLayout.AddWidget(cmdFsrib6Button, 0, 0)
     var cmdVerticalSpacer = widgets.NewQSpacerItem(20, 40, widgets.QSizePolicy__Fixed, widgets.QSizePolicy__Expanding)
     cmdLayout.AddItem(cmdVerticalSpacer)
     cmdFrame.SetLayout(cmdLayout)
@@ -319,8 +310,6 @@ func consoleWin() {
 
     // Connect push buttons
     cmdNeighButton.ConnectClicked(func(_ bool) { cmdNeighButtonClicked(logText) })
-    cmdFsrib4Button.ConnectClicked(func(_ bool) { cmdFsrib4ButtonClicked(logText) })
-    cmdFsrib6Button.ConnectClicked(func(_ bool) { cmdFsrib6ButtonClicked(logText) })
     consoleWindow.ConnectCloseEvent(consoleWindowClosed)
     consoleWindow.Show()
 }
@@ -337,15 +326,6 @@ func cmdNeighButtonClicked(logTextWidget *widgets.QTextEdit) {
     }
     logTextWidget.InsertPlainText("\n")
 }
-
-func cmdFsrib4ButtonClicked(logTextWidget *widgets.QTextEdit) {
-    logTextWidget.InsertPlainText("Button FlowSpec 4\n\n")
-}
-
-func cmdFsrib6ButtonClicked(logTextWidget *widgets.QTextEdit) {
-    logTextWidget.Append("Button FlowSpec 6\n\n")
-}
-
 
 func flowspecWin() {
     // Expanding Size policy
