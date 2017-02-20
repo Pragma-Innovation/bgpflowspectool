@@ -559,11 +559,11 @@ func flowspecWin() {
 		editRuleTcpUrgFlagCheck    = widgets.NewQCheckBox2("URG", editRuleTcpFlagGroupBox)
 		editRuleTcpCwrFlagCheck    = widgets.NewQCheckBox2("CWR", editRuleTcpFlagGroupBox)
 		editRuleLineSeparator      = widgets.NewQFrame(editRuleTcpFlagGroupBox, 0)
-		editRuleTcpOpAndCheck      = widgets.NewQCheckBox2("AND", editRuleTcpFlagGroupBox)
+		editRuleTcpOpAndButton     = widgets.NewQPushButton2("AND", editRuleTcpFlagGroupBox)
 		editRuleTcpOpNotCheck      = widgets.NewQCheckBox2("NOT", editRuleTcpFlagGroupBox)
 		editRuleTcpOpMatchCheck    = widgets.NewQCheckBox2("MATCH", editRuleTcpFlagGroupBox)
 		editRuleTcpFlagFilterLabel = widgets.NewQLabel2("Filter:", editRuleTcpFlagGroupBox, 0)
-		editRuleTcpFlagAddButton   = widgets.NewQPushButton2("Add", editRuleTcpFlagGroupBox)
+		editRuleTcpOpOrButton      = widgets.NewQPushButton2("OR", editRuleTcpFlagGroupBox)
 	)
 	editRuleTcpFlagFilterLine = widgets.NewQLineEdit(nil)
 	editRuleLineSeparator.SetFrameShape(widgets.QFrame__VLine)
@@ -579,10 +579,22 @@ func flowspecWin() {
 	editRuleTcpFlagLayout.AddWidget(editRuleTcpUrgFlagCheck, 1, 2, 0)
 	editRuleTcpFlagLayout.AddWidget(editRuleTcpCwrFlagCheck, 1, 3, 0)
 	editRuleTcpFlagLayout.AddWidget3(editRuleLineSeparator, 0, 4, 2, 1, 0)
-	editRuleTcpFlagLayout.AddWidget(editRuleTcpOpAndCheck, 1, 5, 0)
+	editRuleTcpFlagLayout.AddWidget(editRuleTcpOpMatchCheck, 1, 5, 0)
 	editRuleTcpFlagLayout.AddWidget(editRuleTcpOpNotCheck, 1, 6, 0)
-	editRuleTcpFlagLayout.AddWidget(editRuleTcpOpMatchCheck, 1, 7, 0)
-	editRuleTcpFlagLayout.AddWidget(editRuleTcpFlagAddButton, 1, 8, 0)
+	editRuleTcpFlagLayout.AddWidget(editRuleTcpOpAndButton, 1, 7, 0)
+	editRuleTcpFlagLayout.AddWidget(editRuleTcpOpOrButton, 1, 8, 0)
+
+	editRuleTcpOpAndButton.ConnectClicked(func(_ bool) {
+		editRuleTcpOpAndButtonFunc(editRuleTcpSynFlagCheck, editRuleTcpAckFlagCheck,
+			editRuleTcpRstFlagCheck, editRuleTcpFinFlagCheck, editRuleTcpPshFlagCheck, editRuleTcpEceFlagCheck, editRuleTcpUrgFlagCheck,
+			editRuleTcpCwrFlagCheck, editRuleTcpOpNotCheck, editRuleTcpOpMatchCheck, editRuleTcpFlagFilterLine)
+	})
+
+	editRuleTcpOpOrButton.ConnectClicked(func(_ bool) {
+		editRuleTcpOpOrButtonFunc(editRuleTcpSynFlagCheck, editRuleTcpAckFlagCheck,
+			editRuleTcpRstFlagCheck, editRuleTcpFinFlagCheck, editRuleTcpPshFlagCheck, editRuleTcpEceFlagCheck, editRuleTcpUrgFlagCheck,
+			editRuleTcpCwrFlagCheck, editRuleTcpOpNotCheck, editRuleTcpOpMatchCheck, editRuleTcpFlagFilterLine)
+	})
 
 	// Line edit and checkbox for fragment filtering
 	var editRuleFragGroupBox = widgets.NewQGroupBox2("IP Fragment", editRuleMainWid)
@@ -774,7 +786,6 @@ func ribManipDeleteRuleButtonFunc(myTree *widgets.QTreeWidget) {
 	myNlri = myItem.Text(0)
 	myExtCom = myItem.Text(1)
 	deleteCmdPath = fmt.Sprintf("match %sthen %s", formatNlriOutputToDeleteCmdNlri(myNlri), formatExtComOutputToDeleteCmdExtCom(myExtCom))
-
 	if index == -1 {
 		return
 	}
@@ -1164,7 +1175,7 @@ func formatNlriOutputToDeleteCmdNlri(myNlri string) string {
 	nlriCmdDelete = strings.Replace(nlriCmdDelete, "port: ", "port ", -1)
 	nlriCmdDelete = strings.Replace(nlriCmdDelete, "source-port: ", "source-port ", -1)
 	nlriCmdDelete = strings.Replace(nlriCmdDelete, "destination-port: ", "destination-port ", -1)
-	nlriCmdDelete = strings.Replace(nlriCmdDelete, "tcp-flags: ", "tcp-flags ", -1)
+	nlriCmdDelete = strings.Replace(nlriCmdDelete, "tcp-flags:", "tcp-flags ", -1)
 	nlriCmdDelete = strings.Replace(nlriCmdDelete, "icmp-type: ", "icmp-type ", -1)
 	nlriCmdDelete = strings.Replace(nlriCmdDelete, "icmp-code: ", "icmp-code ", -1)
 	nlriCmdDelete = strings.Replace(nlriCmdDelete, "protocol: ", "protocol ", -1)
@@ -1186,4 +1197,82 @@ func formatExtComOutputToDeleteCmdExtCom(myExtCom string) string {
 	extComCmdDelete = strings.Replace(extComCmdDelete, "mark: ", "mark ", -1)
 	extComCmdDelete = strings.Replace(extComCmdDelete, "redirect: ", "redirect ", -1)
 	return extComCmdDelete
+}
+
+func editRuleTcpOpAndButtonFunc(editRuleTcpSynFlagCheck *widgets.QCheckBox, editRuleTcpAckFlagCheck *widgets.QCheckBox,
+	editRuleTcpRstFlagCheck *widgets.QCheckBox, editRuleTcpFinFlagCheck *widgets.QCheckBox, editRuleTcpPshFlagCheck *widgets.QCheckBox,
+	editRuleTcpEceFlagCheck *widgets.QCheckBox, editRuleTcpUrgFlagCheck *widgets.QCheckBox, editRuleTcpCwrFlagCheck *widgets.QCheckBox,
+	editRuleTcpOpNotCheck *widgets.QCheckBox, editRuleTcpOpMatchCheck *widgets.QCheckBox, editRuleTcpFlagFilterLine *widgets.QLineEdit) {
+	tcpFlagsString := convertTcpFlagsCheckToString(editRuleTcpSynFlagCheck, editRuleTcpAckFlagCheck, editRuleTcpRstFlagCheck, editRuleTcpFinFlagCheck,
+		editRuleTcpPshFlagCheck, editRuleTcpEceFlagCheck, editRuleTcpUrgFlagCheck, editRuleTcpCwrFlagCheck, editRuleTcpOpNotCheck, editRuleTcpOpMatchCheck)
+	tcpFlagsString = fmt.Sprintf("%s%s%s", editRuleTcpFlagFilterLine.Text(), tcpFlagsString, "&")
+	editRuleTcpFlagFilterLine.SetText(tcpFlagsString)
+	uncheckAllTcpFlagsCheckbox(editRuleTcpSynFlagCheck, editRuleTcpAckFlagCheck, editRuleTcpRstFlagCheck, editRuleTcpFinFlagCheck,
+		editRuleTcpPshFlagCheck, editRuleTcpEceFlagCheck, editRuleTcpUrgFlagCheck, editRuleTcpCwrFlagCheck, editRuleTcpOpNotCheck, editRuleTcpOpMatchCheck)
+}
+
+func editRuleTcpOpOrButtonFunc(editRuleTcpSynFlagCheck *widgets.QCheckBox, editRuleTcpAckFlagCheck *widgets.QCheckBox,
+	editRuleTcpRstFlagCheck *widgets.QCheckBox, editRuleTcpFinFlagCheck *widgets.QCheckBox, editRuleTcpPshFlagCheck *widgets.QCheckBox,
+	editRuleTcpEceFlagCheck *widgets.QCheckBox, editRuleTcpUrgFlagCheck *widgets.QCheckBox, editRuleTcpCwrFlagCheck *widgets.QCheckBox,
+	editRuleTcpOpNotCheck *widgets.QCheckBox, editRuleTcpOpMatchCheck *widgets.QCheckBox, editRuleTcpFlagFilterLine *widgets.QLineEdit) {
+	tcpFlagsString := convertTcpFlagsCheckToString(editRuleTcpSynFlagCheck, editRuleTcpAckFlagCheck, editRuleTcpRstFlagCheck, editRuleTcpFinFlagCheck,
+		editRuleTcpPshFlagCheck, editRuleTcpEceFlagCheck, editRuleTcpUrgFlagCheck, editRuleTcpCwrFlagCheck, editRuleTcpOpNotCheck, editRuleTcpOpMatchCheck)
+	tcpFlagsString = fmt.Sprintf("%s%s%s", editRuleTcpFlagFilterLine.Text(), tcpFlagsString, " ")
+	editRuleTcpFlagFilterLine.SetText(tcpFlagsString)
+	uncheckAllTcpFlagsCheckbox(editRuleTcpSynFlagCheck, editRuleTcpAckFlagCheck, editRuleTcpRstFlagCheck, editRuleTcpFinFlagCheck,
+		editRuleTcpPshFlagCheck, editRuleTcpEceFlagCheck, editRuleTcpUrgFlagCheck, editRuleTcpCwrFlagCheck, editRuleTcpOpNotCheck, editRuleTcpOpMatchCheck)
+}
+
+func convertTcpFlagsCheckToString(editRuleTcpSynFlagCheck *widgets.QCheckBox, editRuleTcpAckFlagCheck *widgets.QCheckBox,
+	editRuleTcpRstFlagCheck *widgets.QCheckBox, editRuleTcpFinFlagCheck *widgets.QCheckBox, editRuleTcpPshFlagCheck *widgets.QCheckBox,
+	editRuleTcpEceFlagCheck *widgets.QCheckBox, editRuleTcpUrgFlagCheck *widgets.QCheckBox, editRuleTcpCwrFlagCheck *widgets.QCheckBox,
+	editRuleTcpOpNotCheck *widgets.QCheckBox, editRuleTcpOpMatchCheck *widgets.QCheckBox) string {
+	var retString string = ""
+	if editRuleTcpSynFlagCheck.CheckState() == core.Qt__Checked {
+		retString = fmt.Sprintf("%s%s", retString, "S")
+	}
+	if editRuleTcpAckFlagCheck.CheckState() == core.Qt__Checked {
+		retString = fmt.Sprintf("%s%s", retString, "A")
+	}
+	if editRuleTcpRstFlagCheck.CheckState() == core.Qt__Checked {
+		retString = fmt.Sprintf("%s%s", retString, "R")
+	}
+	if editRuleTcpFinFlagCheck.CheckState() == core.Qt__Checked {
+		retString = fmt.Sprintf("%s%s", retString, "F")
+	}
+	if editRuleTcpPshFlagCheck.CheckState() == core.Qt__Checked {
+		retString = fmt.Sprintf("%s%s", retString, "P")
+	}
+	if editRuleTcpEceFlagCheck.CheckState() == core.Qt__Checked {
+		retString = fmt.Sprintf("%s%s", retString, "E")
+	}
+	if editRuleTcpUrgFlagCheck.CheckState() == core.Qt__Checked {
+		retString = fmt.Sprintf("%s%s", retString, "U")
+	}
+	if editRuleTcpCwrFlagCheck.CheckState() == core.Qt__Checked {
+		retString = fmt.Sprintf("%s%s", retString, "C")
+	}
+	if editRuleTcpOpNotCheck.CheckState() == core.Qt__Checked && retString != "" {
+		retString = fmt.Sprintf("%s%s", "!", retString)
+	}
+	if editRuleTcpOpMatchCheck.CheckState() == core.Qt__Checked {
+		retString = fmt.Sprintf("%s%s", "=", retString)
+	}
+	return retString
+}
+
+func uncheckAllTcpFlagsCheckbox(editRuleTcpSynFlagCheck *widgets.QCheckBox, editRuleTcpAckFlagCheck *widgets.QCheckBox,
+	editRuleTcpRstFlagCheck *widgets.QCheckBox, editRuleTcpFinFlagCheck *widgets.QCheckBox, editRuleTcpPshFlagCheck *widgets.QCheckBox,
+	editRuleTcpEceFlagCheck *widgets.QCheckBox, editRuleTcpUrgFlagCheck *widgets.QCheckBox, editRuleTcpCwrFlagCheck *widgets.QCheckBox,
+	editRuleTcpOpNotCheck *widgets.QCheckBox, editRuleTcpOpMatchCheck *widgets.QCheckBox) {
+	editRuleTcpSynFlagCheck.SetCheckState(core.Qt__Unchecked)
+	editRuleTcpAckFlagCheck.SetCheckState(core.Qt__Unchecked)
+	editRuleTcpRstFlagCheck.SetCheckState(core.Qt__Unchecked)
+	editRuleTcpFinFlagCheck.SetCheckState(core.Qt__Unchecked)
+	editRuleTcpPshFlagCheck.SetCheckState(core.Qt__Unchecked)
+	editRuleTcpEceFlagCheck.SetCheckState(core.Qt__Unchecked)
+	editRuleTcpUrgFlagCheck.SetCheckState(core.Qt__Unchecked)
+	editRuleTcpCwrFlagCheck.SetCheckState(core.Qt__Unchecked)
+	editRuleTcpOpNotCheck.SetCheckState(core.Qt__Unchecked)
+	editRuleTcpOpMatchCheck.SetCheckState(core.Qt__Unchecked)
 }
