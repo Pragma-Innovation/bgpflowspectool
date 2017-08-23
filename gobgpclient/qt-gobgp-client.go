@@ -21,6 +21,7 @@ import (
 	"github.com/osrg/gobgp/packet/bgp"
 	"github.com/osrg/gobgp/table"
 	"github.com/therecipe/qt/widgets"
+	"github.com/satori/go.uuid"
 	"golang.org/x/net/context"
 	"strings"
 	"time"
@@ -186,6 +187,7 @@ func showRouteToItem(pathList []*table.Path, myTree *widgets.QTreeWidget) {
 		myItem.SetText(1, pattrstr)
 		myItem.SetText(2, age)
 		myItem.SetText(3, nexthop)
+		myItem.SetText(4, p.UUID().String())
 	}
 	for i := 0; i < 4; i++ {
 		myTree.ResizeColumnToContents(i)
@@ -222,72 +224,28 @@ func addFlowSpecPath(client api.GobgpApiClient, pathList []*table.Path) ([]byte,
 	return uuid, nil
 }
 
-func DeleteFlowSpecPath(client api.GobgpApiClient, myCommand string, myAddrFam string) error {
-	if myAddrFam == "ipv4-flowspec" {
-		path, _ := cmd.ParsePath(bgp.RF_FS_IPv4_UC, strings.Split(myCommand, " "))
-		return (deleteFlowSpecPath(client, bgp.RF_FS_IPv4_UC, nil, []*table.Path{path}))
+func DeleteFlowSpecPathFromUuid(client api.GobgpApiClient, myUuid string) error {
+	byteUuid, err := uuid.FromString(myUuid)
+	if err != nil {
+		fmt.Printf("Something gone wrong with UUID converion into bytes: %s\n", err)
 	}
-	if myAddrFam == "ipv6-flowspec" {
-		myCmdInStrings := strings.Split(myCommand, " ")
-		getRidOfPrefixLenght(myCmdInStrings)
-		path, _ := cmd.ParsePath(bgp.RF_FS_IPv6_UC, myCmdInStrings)
-		return (deleteFlowSpecPath(client, bgp.RF_FS_IPv6_UC, nil, []*table.Path{path}))
-	}
-	return nil
+	return deleteFlowSpecPathFromUuid(client, byteUuid.Bytes())
 }
 
-func deleteFlowSpecPath(client api.GobgpApiClient, f bgp.RouteFamily, uuid []byte, pathList []*table.Path) error {
+func deleteFlowSpecPathFromUuid(client api.GobgpApiClient, uuid []byte) error {
 	var reqs []*api.DeletePathRequest
 	var vrfID = ""
 	resource := api.Resource_GLOBAL
-	switch {
-	case len(pathList) != 0:
-		for _, path := range pathList {
-			nlri := path.GetNlri()
-			n, err := nlri.Serialize()
-			if err != nil {
-				return err
-			}
-			p := &api.Path{
-				Nlri:   n,
-				Family: uint32(path.GetRouteFamily()),
-			}
-			reqs = append(reqs, &api.DeletePathRequest{
-				Resource: resource,
-				VrfId:    vrfID,
-				Path:     p,
-			})
-		}
-	default:
-		reqs = append(reqs, &api.DeletePathRequest{
-			Resource: resource,
-			VrfId:    vrfID,
-			Uuid:     uuid,
-			Family:   uint32(f),
-		})
-	}
-
+	reqs = append(reqs, &api.DeletePathRequest{
+		Resource: resource,
+		VrfId:    vrfID,
+		Uuid:     uuid,
+		Family:   uint32(0),
+	})
 	for _, req := range reqs {
 		if _, err := client.DeletePath(context.Background(), req); err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-func getRidOfPrefixLenght(myStrings []string) {
-	var ipv6NextString bool = false
-	for i, myString := range myStrings {
-		if ipv6NextString {
-			// I need to get rid of the last /value prefix lenght
-			// as it is not supported by delete path API
-			ipv6InPieces := strings.Split(myString, "/")
-			myString = fmt.Sprintf("%s/%s", ipv6InPieces[0], ipv6InPieces[1])
-			myStrings[i] = myString
-			ipv6NextString = false
-		}
-		if (myString == "destination") || (myString == "source") {
-			ipv6NextString = true
-		}
-	}
 }

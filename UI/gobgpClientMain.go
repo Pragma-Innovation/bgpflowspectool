@@ -689,10 +689,10 @@ func flowspecWin() {
 	var ribContentTree = widgets.NewQTreeWidget(ribManipDockWid)
 	ribContentTree.SetSizePolicy(expandingSizePolicy)
 	ribManipDockWidLayout.AddWidget(ribContentTree, 0, 0)
-	ribContentTree.SetColumnCount(4)
+	ribContentTree.SetColumnCount(5)
 	ribContentTree.Header().SetSectionResizeMode(widgets.QHeaderView__ResizeToContents)
 	var ribContentTreeHeaderItem = ribContentTree.HeaderItem()
-	ribHeaderLabels := []string{"NLRI", "Extended community", "Age", "Next Hop"}
+	ribHeaderLabels := []string{"NLRI", "Extended community", "Age", "Next Hop", "Path UUID"}
 	for i, myLabel := range ribHeaderLabels {
 		ribContentTreeHeaderItem.SetText(i, myLabel)
 	}
@@ -778,18 +778,10 @@ func ribManipLoadRibFunc(myTree *widgets.QTreeWidget) {
 
 func ribManipDeleteRuleButtonFunc(myTree *widgets.QTreeWidget) {
 	var myItem *widgets.QTreeWidgetItem = nil
-	var myNlri string
-	var myExtCom string
-	var deleteCmdPath string
 	myItem = myTree.CurrentItem()
 	index := myTree.IndexOfTopLevelItem(myItem)
-	myNlri = myItem.Text(0)
-	myExtCom = myItem.Text(1)
-	deleteCmdPath = fmt.Sprintf("match %sthen %s", formatNlriOutputToDeleteCmdNlri(myNlri), formatExtComOutputToDeleteCmdExtCom(myExtCom))
-	if index == -1 {
-		return
-	}
-	bgpcli.DeleteFlowSpecPath(client, deleteCmdPath, ribActiveFamily)
+	myUuid := myItem.Text(4)
+	bgpcli.DeleteFlowSpecPathFromUuid(client, myUuid)
 	if index >= 0 && index < myTree.TopLevelItemCount() {
 		myItem = myTree.TakeTopLevelItem(index)
 	}
@@ -1253,7 +1245,7 @@ func convertTcpFlagsCheckToString(editRuleTcpSynFlagCheck *widgets.QCheckBox, ed
 		retString = fmt.Sprintf("%s%s", retString, "C")
 	}
 	if editRuleTcpOpNotCheck.CheckState() == core.Qt__Checked && retString != "" {
-		retString = fmt.Sprintf("%s%s", "!", retString)
+		retString = fmt.Sprintf("%s%s", "=!", retString)
 	}
 	if editRuleTcpOpMatchCheck.CheckState() == core.Qt__Checked {
 		retString = fmt.Sprintf("%s%s", "=", retString)
