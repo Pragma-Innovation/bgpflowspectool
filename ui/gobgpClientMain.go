@@ -22,7 +22,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	bgpcli "github.com/Matt-Texier/local-mitigation-agent/gobgpclient"
+	bgpcli "github.com/Pragma-innovation/bgpflowspectool/gobgpclient"
 	api "github.com/osrg/gobgp/api"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
