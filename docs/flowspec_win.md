@@ -20,6 +20,8 @@ All fields of the rule (flowspec NLRI) is checked against a regexp such that it 
 
 All rules that has been created can be saved under a file. The file format is nothing else but a JSON format of each fields of the rule displayed in the rule list widget.
 
+For easier understanding of the use of flowspec libraries, please try to load the existing library that comes with the repository : https://github.com/Pragma-Innovation/bgpflowspectool/tree/master/fslibexample
+
 ## BGP flowspec RIB and update
 
 In order to push a rule from the library to the RIB, select it in the list of rule and push the "Push to RIB button"
