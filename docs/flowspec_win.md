@@ -30,7 +30,7 @@ In order to push a rule from the library to the RIB, select it in the list of ru
 
 By clicking Load / reload button of the RIB tool, you will see the active flowspec routes. Select which adress familly you would like to display.
 
-By pushing the delete button, you are able to delete the selected active entry.
+By pushing the delete button, you are able to delete the selected active entry. This delete button is using a newly introcuced feature of gpbgp that provides, for each RIB entry, a UUID. Behind the scene, this UUID is used to identify the entry and delete the associated path.
 
 For more easier use, the RIB tool can be detached from the Flowspec main window (the RIB window is a dock window of the flowspec window).
 
