@@ -42,8 +42,8 @@ Next step will be about testing this tool against router vendors.
 
 # Install and configure your development machine
 
-* Follow the installation process of GoBGP: https://github.com/osrg/gobgp/blob/master/docs/sources/getting-started.md
-* Follow the installation process of Qt Golang binding: https://github.com/therecipe/qt
+* Follow the installation process of GoBGP (please install version 1.22 or lastest): https://github.com/osrg/gobgp/blob/master/docs/sources/getting-started.md
+* Follow the installation process of Qt Golang binding (please install Qt 5.9.1): https://github.com/therecipe/qt
   * Make sure that you allocate 8 GB of RAM to your VM
 * ENV variables: The following example needs to be updated acccording to your machine but here is a snippet of my .bashrc file as an example
 
@@ -57,7 +57,7 @@ PATH=/home/matthieu/go-work/bin:$PATH
 PATH=/usr/local/go/bin:$PATH
 # qt variable
 export QT_DIR=/home/matthieu/Qt
-export QT_VERSION=5.7.0
+export QT_VERSION=5.9.1
 PATH=/home/matthieu/Qt/5.7/gcc_64/bin:$PATH
 ```
 * compile the tool and launch it (to be update with your own path):
