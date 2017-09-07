@@ -112,15 +112,17 @@ var (
 	editRuleActSisterValueLine *widgets.QLineEdit
 	editRuleActionCombo        *widgets.QComboBox
 	editRuleTree               *widgets.QTreeWidget
-	consoleWindow              *widgets.QMainWindow
-	flowspecWindow             *widgets.QMainWindow
+	toolWindow				   *widgets.QMainWindow
+)
+
+var (
+	indexFlowspecMainWidget 	int
+	indexConsoleMainWidget 		int
 )
 
 var client api.GobgpApiClient
 
 var (
-	windowFlowSpecCreated   bool
-	windowBgpConsoleCreated bool
 	addrFamilyIpv4Checked   bool
 	addrFamilyIpv6Checked   bool
 )
@@ -149,10 +151,6 @@ var (
 )
 
 func main() {
-	// initialise boolean that tell us if sub-windows is already reated
-	windowFlowSpecCreated = false
-	windowBgpConsoleCreated = false
-
 	// launch gobgp API client
 	timeout := grpc.WithTimeout(time.Second)
 	conn, rpcErr := grpc.Dial("localhost:50051", timeout, grpc.WithBlock(), grpc.WithInsecure())
@@ -164,73 +162,68 @@ func main() {
 	client = api.NewGobgpApiClient(conn)
 
 	widgets.NewQApplication(len(os.Args), os.Args)
-	var toolbarWindow = widgets.NewQMainWindow(nil, 0)
-	toolbarWindow.SetGeometry(core.NewQRect4(100, 100, 400, 50))
-	toolbarWindow.SetWindowTitle("Gabu - Toolbar")
-	var toolbarCentralWidget = widgets.NewQWidget(nil, 0)
-	var toolbarCentralLayout = widgets.NewQHBoxLayout()
-	toolbarCentralLayout.SetSpacing(6)
-	toolbarCentralLayout.SetContentsMargins(11, 11, 11, 11)
-	toolbarCentralWidget.SetLayout(toolbarCentralLayout)
-	toolbarWindow.SetCentralWidget(toolbarCentralWidget)
-	// main window "toolbar" push button
-	var toolbarConsolePush = widgets.NewQPushButton2("GoBgp Console", toolbarCentralWidget)
-	var toolbarFlowSpecPush = widgets.NewQPushButton2("FlowSpec RIB", toolbarCentralWidget)
+	toolWindow = widgets.NewQMainWindow(nil, 0)
+	toolWindow.SetGeometry(core.NewQRect4(100, 100, 1200, 1000))
 
-	var toolbarButtonSizePolicy = widgets.NewQSizePolicy()
-	toolbarButtonSizePolicy.SetHorizontalPolicy(widgets.QSizePolicy__Expanding)
-	toolbarButtonSizePolicy.SetVerticalPolicy(widgets.QSizePolicy__Expanding)
-	toolbarButtonSizePolicy.SetHorizontalStretch(0)
-	toolbarButtonSizePolicy.SetVerticalStretch(0)
-	toolbarConsolePush.SetSizePolicy(toolbarButtonSizePolicy)
-	toolbarFlowSpecPush.SetSizePolicy(toolbarButtonSizePolicy)
+	toolWindow.SetWindowTitle("Gabu - Toolbar")
+	var toolCentralWidget = widgets.NewQWidget(nil, 0)
+	var toolCentralLayout = widgets.NewQHBoxLayout()
+	toolCentralLayout.SetSpacing(0)
+	toolCentralLayout.SetContentsMargins(0, 0, 0, 0)
+	toolCentralWidget.SetLayout(toolCentralLayout)
+	toolWindow.SetCentralWidget(toolCentralWidget)
+	// Tool main window menu bar
+	var toolMainToolBar = widgets.NewQToolBar2(toolWindow)
+	toolMainToolBar.SetAllowedAreas(core.Qt__LeftToolBarArea)
+	toolMainToolBar.SetOrientation(core.Qt__Vertical)
+	toolWindow.AddToolBar(core.Qt__LeftToolBarArea, toolMainToolBar)
+	//var actionFlowspecRaise = widgets.NewQAction2("Flowspec", toolMainToolBar)
+	//var actionConsoleRaise = widgets.NewQAction2("Console", toolMainToolBar)
+	var toolBarFlowspecAction = toolMainToolBar.AddAction("flowspec")
+	var toolBarConsoleAction = toolMainToolBar.AddAction("Console")
+	toolMainToolBar.SetIconSize(core.NewQSize2(100, 100))
+	var toolRightMainWidget = widgets.NewQWidget(toolCentralWidget, 0)
+	var toolRightMainWidgetLayout = widgets.NewQVBoxLayout()
+	toolRightMainWidgetLayout.SetSpacing(0)
+	toolRightMainWidgetLayout.SetContentsMargins(0, 0, 0, 0,)
+	toolRightMainWidget.SetLayout(toolRightMainWidgetLayout)
 
-	// Connect buttons to functions
-	toolbarConsolePush.ConnectClicked(func(_ bool) { toolbarConsolButtonClicked() })
-	toolbarFlowSpecPush.ConnectClicked(func(_ bool) { toolbarFspecButtonPushed() })
-	// add button to main layout
-	toolbarCentralLayout.AddWidget(toolbarConsolePush, 0, 0)
-	toolbarCentralLayout.AddWidget(toolbarFlowSpecPush, 0, 0)
-	toolbarWindow.Show()
+	var layeredMainWidget = widgets.NewQStackedWidget(toolRightMainWidget)
+	var flowspecLayerMainWidget = widgets.NewQWidget(layeredMainWidget, 0)
+	var consoleLayerMainWidget = widgets.NewQWidget(layeredMainWidget, 0)
+	indexConsoleMainWidget = layeredMainWidget.AddWidget(consoleLayerMainWidget)
+	indexFlowspecMainWidget = layeredMainWidget.AddWidget(flowspecLayerMainWidget)
+	buildConsoleWidget(consoleLayerMainWidget)
+	buildFlowspecWidget(flowspecLayerMainWidget)
+	toolRightMainWidgetLayout.AddWidget(layeredMainWidget, 0, 0)
+	// Connect tool bar actions to functions
+	toolBarFlowspecAction.ConnectTriggered(func(checked bool) { toolFspecButtonPushed(layeredMainWidget) })
+	toolBarConsoleAction.ConnectTriggered(func (checked bool) { toolConsolButtonClicked(layeredMainWidget) })
+	//toolCentralLayout.AddWidget(sideMenuBarMainWidget, 0, 0)
+	toolCentralLayout.AddWidget(toolRightMainWidget, 0, 0)
+	toolWindow.Show()
 	widgets.QApplication_Exec()
 
 }
 
-func toolbarConsolButtonClicked() {
-	if windowBgpConsoleCreated {
-		consoleWindow.Raise()
-
-	} else {
-		consoleWin()
-		windowBgpConsoleCreated = true
-	}
+func toolConsolButtonClicked(myStackedWidget *widgets.QStackedWidget) {
+	myStackedWidget.SetCurrentIndex(indexConsoleMainWidget)
 }
 
-func toolbarFspecButtonPushed() {
-	if windowFlowSpecCreated {
-		flowspecWindow.Raise()
-	} else {
-		flowspecWin()
-		windowFlowSpecCreated = true
-	}
-
+func toolFspecButtonPushed(myStackedWidget *widgets.QStackedWidget) {
+	myStackedWidget.SetCurrentIndex(indexFlowspecMainWidget)
 }
 
-func consoleWin() {
+func buildConsoleWidget(myConsoleMainWidget *widgets.QWidget) {
 
-	consoleWindow = widgets.NewQMainWindow(nil, 0)
-	consoleWindow.SetGeometry(core.NewQRect4(100, 100, 1000, 600))
-	consoleWindow.SetWindowTitle("Gabu - GoBGP Console")
-	var consoleWindowCentralWidget = widgets.NewQWidget(nil, 0)
 	var consoleWindowCentralWidgetLayout = widgets.NewQHBoxLayout()
 	consoleWindowCentralWidgetLayout.SetSpacing(6)
 	consoleWindowCentralWidgetLayout.SetContentsMargins(11, 11, 11, 11)
-	consoleWindowCentralWidget.SetLayout(consoleWindowCentralWidgetLayout)
-	consoleWindow.SetCentralWidget(consoleWindowCentralWidget)
+	myConsoleMainWidget.SetLayout(consoleWindowCentralWidgetLayout)
 
 	// console window widgets
 	// log Frame
-	var logFrame = widgets.NewQFrame(consoleWindowCentralWidget, 0)
+	var logFrame = widgets.NewQFrame(myConsoleMainWidget, 0)
 	logFrame.SetFrameShape(widgets.QFrame__Panel)
 	logFrame.SetFrameShadow(widgets.QFrame__Raised)
 	var frameSizePolicy = widgets.NewQSizePolicy()
@@ -272,7 +265,7 @@ func consoleWin() {
 	consoleWindowCentralWidgetLayout.AddWidget(logFrame, 0, 0)
 
 	// command Frame
-	var cmdFrame = widgets.NewQFrame(consoleWindowCentralWidget, 0)
+	var cmdFrame = widgets.NewQFrame(myConsoleMainWidget, 0)
 	cmdFrame.SetFrameShape(widgets.QFrame__Panel)
 	cmdFrame.SetFrameShadow(widgets.QFrame__Raised)
 	cmdFrame.SetSizePolicy(frameSizePolicy)
@@ -303,13 +296,8 @@ func consoleWin() {
 
 	// Connect push buttons
 	cmdNeighButton.ConnectClicked(func(_ bool) { cmdNeighButtonClicked(logText) })
-	consoleWindow.ConnectCloseEvent(consoleWindowClosed)
-	consoleWindow.Show()
 }
 
-func consoleWindowClosed(event *gui.QCloseEvent) {
-	windowBgpConsoleCreated = false
-}
 
 func cmdNeighButtonClicked(logTextWidget *widgets.QTextEdit) {
 	dumpNeigh := bgpcli.TxtdumpGetNeighbor(client)
@@ -320,7 +308,7 @@ func cmdNeighButtonClicked(logTextWidget *widgets.QTextEdit) {
 	logTextWidget.InsertPlainText("\n")
 }
 
-func flowspecWin() {
+func buildFlowspecWidget(myFlowspecMainWidget *widgets.QWidget) {
 	// Expanding Size policy
 	var expandingSizePolicy = widgets.NewQSizePolicy()
 	expandingSizePolicy.SetHorizontalPolicy(widgets.QSizePolicy__Expanding)
@@ -335,33 +323,31 @@ func flowspecWin() {
 	preferredSizePolicy.SetHorizontalStretch(0)
 	preferredSizePolicy.SetVerticalStretch(0)
 
-	// Flowspec main window
-	flowspecWindow = widgets.NewQMainWindow(nil, 0)
-	//    flowspecWindow.Layout().DestroyQObject()
-	var flowspecCentralWid = widgets.NewQWidget(nil, 0)
-	flowspecWindow.SetGeometry(core.NewQRect4(100, 100, 1000, 800))
-	flowspecWindow.SetWindowTitle("Gabu - Flowspec tool")
 	var flowspecWindowLayout = widgets.NewQVBoxLayout()
 	flowspecWindowLayout.SetSpacing(6)
 	flowspecWindowLayout.SetContentsMargins(11, 11, 11, 11)
-	flowspecCentralWid.SetLayout(flowspecWindowLayout)
+	myFlowspecMainWidget.SetLayout(flowspecWindowLayout)
 
-	// create one frame and a dock, frame to host flwospec rule config
+	// create tow frames and a dock,
+	// a frame to host flowspec library
+	// a frame to host flowspec rule config
 	// and a dock to manage flowspec Rib towards GoBGP
-	var editRuleFrame = widgets.NewQFrame(flowspecWindow, 0)
 
-	editRuleFrame.SetSizePolicy(preferredSizePolicy)
+	// frame to host library edition widget
+	var fslibRuleFrame = widgets.NewQFrame(myFlowspecMainWidget, 0)
 
-	editRuleFrame.SetFrameShape(widgets.QFrame__Panel)
-	editRuleFrame.SetFrameShadow(widgets.QFrame__Raised)
-	flowspecWindowLayout.AddWidget(editRuleFrame, 0, 0)
+	fslibRuleFrame.SetSizePolicy(preferredSizePolicy)
 
-	var editRuleFrameLayout = widgets.NewQHBoxLayout()
-	editRuleFrame.SetLayout(editRuleFrameLayout)
+	fslibRuleFrame.SetFrameShape(widgets.QFrame__Panel)
+	fslibRuleFrame.SetFrameShadow(widgets.QFrame__Raised)
+	flowspecWindowLayout.AddWidget(fslibRuleFrame, 0, 0)
+
+	var editRuleFrameLayout = widgets.NewQVBoxLayout()
+	fslibRuleFrame.SetLayout(editRuleFrameLayout)
 
 	// Create content of editRuleFrame
 	// Widget for Tree that displays library
-	var editRuleLibWid = widgets.NewQWidget(editRuleFrame, 0)
+	var editRuleLibWid = widgets.NewQWidget(fslibRuleFrame, 0)
 	editRuleLibWid.SetSizePolicy(preferredSizePolicy)
 	editRuleFrameLayout.AddWidget(editRuleLibWid, 0, 0)
 	var editRuleLibWidLayout = widgets.NewQVBoxLayout()
@@ -399,20 +385,32 @@ func flowspecWin() {
 	editRuleLibSaveButton.ConnectClicked(func(_ bool) { editRuleLibSaveButtonFunc() })
 	editRuleLibLoadButton.ConnectClicked(func(_ bool) { editRuleLibLoadButtonFunc(editRuleTree) })
 
-	// Edit rule widget creation: it includes all required
+	// Frame for rule edition : it includes all required
 	// UI Widget to edit a BGP flowspec rule
-	var editRuleMainWid = widgets.NewQWidget(editRuleFrame, 0)
-	editRuleMainWid.SetSizePolicy(preferredSizePolicy)
-	editRuleFrameLayout.AddWidget(editRuleMainWid, 0, core.Qt__AlignLeft)
-	var editRuleMainWidLayout = widgets.NewQVBoxLayout()
-	editRuleMainWid.SetLayout(editRuleMainWidLayout)
+
+	var fsRuleEditFrame = widgets.NewQFrame(myFlowspecMainWidget, 0)
+
+	fsRuleEditFrame.SetSizePolicy(preferredSizePolicy)
+
+	fsRuleEditFrame.SetFrameShape(widgets.QFrame__Panel)
+	fsRuleEditFrame.SetFrameShadow(widgets.QFrame__Raised)
+	flowspecWindowLayout.AddWidget(fsRuleEditFrame, 0, 0)
+
+	var fsRuleEditFrameLayout = widgets.NewQGridLayout2()
+	fsRuleEditFrame.SetLayout(fsRuleEditFrameLayout)
+
+	//var editRuleMainWid = widgets.NewQWidget(fsRuleEditFrame, 0)
+	//editRuleMainWid.SetSizePolicy(preferredSizePolicy)
+	//editRuleFrameLayout.AddWidget(editRuleMainWid, 0, core.Qt__AlignLeft)
+	//var editRuleMainWidLayout = widgets.NewQVBoxLayout()
+	//editRuleMainWid.SetLayout(editRuleMainWidLayout)
 	// Editing widets of Edit Match filter
-	var editRuleMainWidLabel = widgets.NewQLabel2("Edit Flowspec Match Filter", editRuleMainWid, 0)
-	editRuleMainWidLayout.AddWidget(editRuleMainWidLabel, 0, 0)
+	var editRuleMainWidLabel = widgets.NewQLabel2("Edit Flowspec Match Filter", fsRuleEditFrame, 0)
+	fsRuleEditFrameLayout.AddWidget(editRuleMainWidLabel, 0, 0, 0)
 
 	// Line edit for source and dest prefix
-	var editRulePrefixGroupBox = widgets.NewQGroupBox2("Address family and Prefix filters", editRuleMainWid)
-	editRuleMainWidLayout.AddWidget(editRulePrefixGroupBox, 0, 0)
+	var editRulePrefixGroupBox = widgets.NewQGroupBox2("Address family and Prefix filters", fsRuleEditFrame)
+	fsRuleEditFrameLayout.AddWidget(editRulePrefixGroupBox, 1, 0, 0)
 	var editRulePrefixLayout = widgets.NewQGridLayout2()
 	editRulePrefixGroupBox.SetLayout(editRulePrefixLayout)
 	var (
@@ -445,13 +443,13 @@ func flowspecWin() {
 	editAddrFamIpv6.ConnectClicked(editAddrFamIpv6Func)
 
 	// horizontal widget to group together ICMP and proto type
-	var editRuleIcmpProtoWid = widgets.NewQWidget(editRuleMainWid, 0)
-	editRuleMainWidLayout.AddWidget(editRuleIcmpProtoWid, 0, 0)
+	var editRuleIcmpProtoWid = widgets.NewQWidget(fsRuleEditFrame, 0)
+	fsRuleEditFrameLayout.AddWidget(editRuleIcmpProtoWid, 2, 0, 0)
 	var editRuleIcmpProtoWidLayout = widgets.NewQHBoxLayout()
 	editRuleIcmpProtoWidLayout.SetContentsMargins(0, 7, 0, 7)
 	editRuleIcmpProtoWid.SetLayout(editRuleIcmpProtoWidLayout)
 	// line edit for ICMP type and code
-	var editRuleIcmpGroupBox = widgets.NewQGroupBox2("ICMP filters", editRuleMainWid)
+	var editRuleIcmpGroupBox = widgets.NewQGroupBox2("ICMP filters", fsRuleEditFrame)
 	editRuleIcmpProtoWidLayout.AddWidget(editRuleIcmpGroupBox, 0, 0)
 	var editRuleIcmpLayout = widgets.NewQGridLayout2()
 	editRuleIcmpGroupBox.SetLayout(editRuleIcmpLayout)
@@ -473,7 +471,7 @@ func flowspecWin() {
 	editRuleIcmpTypeLineEdit.SetValidator(regexpIcmpTypeValidator)
 	editRuleIcmpCodeLineEdit.SetValidator(regexpIcmpCodeValidator)
 	// Line edit for IP protocol (Next header)
-	var editRuleIpProtoGroupBox = widgets.NewQGroupBox2("IP protocol or Next header", editRuleMainWid)
+	var editRuleIpProtoGroupBox = widgets.NewQGroupBox2("IP protocol or Next header", fsRuleEditFrame)
 	editRuleIcmpProtoWidLayout.AddWidget(editRuleIpProtoGroupBox, 0, 0)
 	var editRuleIpProtoLayout = widgets.NewQGridLayout2()
 	editRuleIpProtoGroupBox.SetLayout(editRuleIpProtoLayout)
@@ -487,8 +485,8 @@ func flowspecWin() {
 	regexpProtoNumValidator = gui.NewQRegExpValidator2(regexpByteValueValidation, editRuleIpProtoLineEdit)
 	editRuleIpProtoLineEdit.SetValidator(regexpProtoNumValidator)
 	// widget and layout for both TCP/UDP ports and DSCP and Packet lenght
-	var editRulePortDscpPackLenghtWid = widgets.NewQWidget(editRuleMainWid, 0)
-	editRuleMainWidLayout.AddWidget(editRulePortDscpPackLenghtWid, 0, 0)
+	var editRulePortDscpPackLenghtWid = widgets.NewQWidget(fsRuleEditFrame, 0)
+	fsRuleEditFrameLayout.AddWidget(editRulePortDscpPackLenghtWid, 3, 0, 0)
 	var editRulePortDscpPackLenghtWidLayout = widgets.NewQHBoxLayout()
 	editRulePortDscpPackLenghtWid.SetLayout(editRulePortDscpPackLenghtWidLayout)
 
@@ -545,8 +543,8 @@ func flowspecWin() {
 	regexpPckLenValidator = gui.NewQRegExpValidator2(regexpPckLenValidation, editRuleLenLineEdit)
 	editRuleLenLineEdit.SetValidator(regexpPckLenValidator)
 	// line edit for TCP flags
-	var editRuleTcpFlagGroupBox = widgets.NewQGroupBox2("TCP flags filter", editRuleMainWid)
-	editRuleMainWidLayout.AddWidget(editRuleTcpFlagGroupBox, 0, 0)
+	var editRuleTcpFlagGroupBox = widgets.NewQGroupBox2("TCP flags filter", fsRuleEditFrame)
+	fsRuleEditFrameLayout.AddWidget(editRuleTcpFlagGroupBox, 1, 1, 0)
 	var editRuleTcpFlagLayout = widgets.NewQGridLayout2()
 	editRuleTcpFlagGroupBox.SetLayout(editRuleTcpFlagLayout)
 	var (
@@ -597,8 +595,8 @@ func flowspecWin() {
 	})
 
 	// Line edit and checkbox for fragment filtering
-	var editRuleFragGroupBox = widgets.NewQGroupBox2("IP Fragment", editRuleMainWid)
-	editRuleMainWidLayout.AddWidget(editRuleFragGroupBox, 0, 0)
+	var editRuleFragGroupBox = widgets.NewQGroupBox2("IP Fragment", fsRuleEditFrame)
+	fsRuleEditFrameLayout.AddWidget(editRuleFragGroupBox, 2, 1, 0)
 	var editRuleFragLayout = widgets.NewQGridLayout2()
 	editRuleFragGroupBox.SetLayout(editRuleFragLayout)
 	var (
@@ -628,12 +626,22 @@ func flowspecWin() {
 	editRuleFragLayout.AddWidget3(editRuleFragFilterLabel, 0, 3, 1, 1, 0)
 	editRuleFragLayout.AddWidget3(editRuleFragFilterLine, 0, 4, 1, 3, 0)
 
-	// Editing widets of Action applied to match traffic
-	var editRuleMainWidLabelMatch = widgets.NewQLabel2("Edit Flowspec Action", editRuleMainWid, 0)
-	editRuleMainWidLayout.AddWidget(editRuleMainWidLabelMatch, 0, 0)
+	// create a frame for action applied
+	var fsRuleActionEditFrame = widgets.NewQFrame(fsRuleEditFrame, 0)
+
+	fsRuleActionEditFrame.SetSizePolicy(preferredSizePolicy)
+	fsRuleActionEditFrame.SetFrameShape(widgets.QFrame__Panel)
+	fsRuleActionEditFrame.SetFrameShadow(widgets.QFrame__Raised)
+	var fsRuleActionEditFrameLayout = widgets.NewQGridLayout2()
+	fsRuleActionEditFrame.SetLayout(fsRuleActionEditFrameLayout)
+	fsRuleEditFrameLayout.AddWidget(fsRuleActionEditFrame, 3, 1, 0)
+
+	// Editing widgets of Action applied to match traffic
+	var editRuleMainWidLabelMatch = widgets.NewQLabel2("Edit Flowspec Action", fsRuleActionEditFrame, 0)
+	fsRuleActionEditFrameLayout.AddWidget(editRuleMainWidLabelMatch, 0, 0, 0)
 	// Match group box widget
-	var editRuleActionGroupBox = widgets.NewQGroupBox2("Action applied", editRuleMainWid)
-	editRuleMainWidLayout.AddWidget(editRuleActionGroupBox, 0, 0)
+	var editRuleActionGroupBox = widgets.NewQGroupBox2("Action applied", fsRuleActionEditFrame)
+	fsRuleActionEditFrameLayout.AddWidget3(editRuleActionGroupBox, 1, 0, 1, 2, 0)
 	var editRuleActionLayout = widgets.NewQGridLayout2()
 	editRuleActionGroupBox.SetLayout(editRuleActionLayout)
 	editRuleActionCombo = widgets.NewQComboBox(nil)
@@ -644,10 +652,10 @@ func flowspecWin() {
 	// wire combo button
 	editRuleActionCombo.ConnectCurrentIndexChanged(func(index int) { editRuleActionComboFunc(editRuleActSisterValueLine, index) })
 	// global apply button
-	var editRuleGlobButtonFrame = widgets.NewQFrame(editRuleMainWid, 0)
+	var editRuleGlobButtonFrame = widgets.NewQFrame(fsRuleEditFrame, 0)
 	var editRuleGlobButtonlayout = widgets.NewQGridLayout2()
 	editRuleGlobButtonFrame.SetLayout(editRuleGlobButtonlayout)
-	editRuleMainWidLayout.AddWidget(editRuleGlobButtonFrame, 0, 0)
+	fsRuleEditFrameLayout.AddWidget3(editRuleGlobButtonFrame, 5, 0, 1, 2, 0)
 	var (
 		editGlobButtonNew       = widgets.NewQPushButton2("New", editRuleGlobButtonFrame)
 		editGlobButtonApply     = widgets.NewQPushButton2("Apply", editRuleGlobButtonFrame)
@@ -663,7 +671,6 @@ func flowspecWin() {
 	editRuleGlobButtonlayout.AddWidget(editGlobButtonDelete, 0, 3, 0)
 	editRuleGlobButtonlayout.AddWidget(editGlobButtonDuplicate, 0, 4, 0)
 
-	// var editRuleMainWidSpacer = widgets.NewQSpacerItem(20, 40, widgets.QSizePolicy__Fixed, widgets.QSizePolicy__Expanding)
 	// editRuleMainWidLayout.AddItem(editRuleMainWidSpacer)
 	// Connection of all widget to QT slots and actions
 	// Tree Widget
@@ -677,10 +684,8 @@ func flowspecWin() {
 	editGlobButtonDuplicate.ConnectClicked(func(_ bool) { editGlobButtonDuplicateFunc() })
 
 	// widget of the Rib tool dock
-	var ribManipDock = widgets.NewQDockWidget("FlowSpec RIB tool", flowspecWindow, 0)
-	// ribManipDock.SetSizePolicy(preferredSizePolicy)
-	// flowspecWindowLayout.AddWidget(ribManipDock, 0, 0)
-	flowspecWindow.AddDockWidget(core.Qt__BottomDockWidgetArea, ribManipDock)
+	var ribManipDock = widgets.NewQDockWidget("FlowSpec RIB tool", toolWindow, 0)
+	toolWindow.AddDockWidget(core.Qt__BottomDockWidgetArea, ribManipDock)
 	// main widget
 	var ribManipDockWid = widgets.NewQWidget(nil, 0)
 	var ribManipDockWidLayout = widgets.NewQHBoxLayout()
@@ -725,11 +730,6 @@ func flowspecWin() {
 
 	ribManipDock.SetWidget(ribManipDockWid)
 	ribManipDock.SetFeatures(widgets.QDockWidget__DockWidgetFloatable | widgets.QDockWidget__DockWidgetMovable)
-
-	flowspecWindow.SetCentralWidget(flowspecCentralWid)
-	flowspecWindow.ConnectCloseEvent(func(myCloseEvent *gui.QCloseEvent) { flowspecWindowClosed(myCloseEvent, ribManipDock) })
-
-	flowspecWindow.Show()
 }
 
 // function called with IPv4 or IPv6 radiobutton from edit widget is checked
@@ -788,12 +788,6 @@ func ribManipDeleteRuleButtonFunc(myTree *widgets.QTreeWidget) {
 	return
 }
 
-// function called when window get closed
-
-func flowspecWindowClosed(event *gui.QCloseEvent, myDock *widgets.QDockWidget) {
-	windowFlowSpecCreated = false
-	flowspecWindow.RemoveDockWidget(myDock)
-}
 
 // Copy the content of a flowspec rule structure into a TreeItem widget
 
@@ -925,7 +919,7 @@ func editGlobButtonApplyFunc() {
 		fullfilBgpFsWithLineEdit(index)
 		fullfilItemWithRule(index, myItem, BgpFsActivLib[index])
 	} else {
-		warningMessage := widgets.NewQMessageBox2(widgets.QMessageBox__Warning, "Rule library issue", "Please select a rule to apply changes", widgets.QMessageBox__Ok, flowspecWindow, core.Qt__Window)
+		warningMessage := widgets.NewQMessageBox2(widgets.QMessageBox__Warning, "Rule library issue", "Please select a rule to apply changes", widgets.QMessageBox__Ok, toolWindow, core.Qt__Window)
 		warningMessage.Exec()
 	}
 }
@@ -1012,7 +1006,7 @@ func editRuleLibPushRibButtonFunc() {
 	myItem = editRuleTree.CurrentItem()
 	if *myItem != (widgets.QTreeWidgetItem{}) {
 		index := editRuleTree.IndexOfTopLevelItem(myItem)
-		if sanityCheckBeforePush(BgpFsActivLib[index], flowspecWindow) {
+		if sanityCheckBeforePush(BgpFsActivLib[index], toolWindow) {
 			myCommandLine := buildCommandFromFsRule(BgpFsActivLib[index])
 			bgpcli.PushNewFlowSpecPath(client, myCommandLine, BgpFsActivLib[index].AddrFam)
 		} else {
@@ -1020,7 +1014,7 @@ func editRuleLibPushRibButtonFunc() {
 		}
 
 	} else {
-		warningMessage := widgets.NewQMessageBox2(widgets.QMessageBox__Warning, "Rule library issue", "Please select a rule to push to the rib", widgets.QMessageBox__Ok, flowspecWindow, core.Qt__Window)
+		warningMessage := widgets.NewQMessageBox2(widgets.QMessageBox__Warning, "Rule library issue", "Please select a rule to push to the rib", widgets.QMessageBox__Ok, toolWindow, core.Qt__Window)
 		warningMessage.Exec()
 	}
 }
@@ -1113,9 +1107,9 @@ func editRuleLibSaveButtonFunc() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	myFileBox := widgets.NewQFileDialog2(flowspecWindow, "Save Flowspec Lib", usr.HomeDir, "*.fslib")
+	myFileBox := widgets.NewQFileDialog2(toolWindow, "Save Flowspec Lib", usr.HomeDir, "*.fslib")
 	myFileBox.SetDefaultSuffix("*.fslib")
-	libFileName = myFileBox.GetSaveFileName(flowspecWindow, "Save Flowspec Lib", usr.HomeDir, "*.fslib", "*.fslib", 0)
+	libFileName = myFileBox.GetSaveFileName(toolWindow, "Save Flowspec Lib", usr.HomeDir, "*.fslib", "*.fslib", 0)
 	// libFileName = widgets.QFileDialog_GetSaveFileName(flowspecWindow, "Save Flowspec Lib", usr.HomeDir, "*.fslib", "*.fslib", 0)
 	saveFsLibJsonFile(libFileName)
 }
@@ -1134,9 +1128,9 @@ func editRuleLibLoadButtonFunc(myTree *widgets.QTreeWidget) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	myFileBox := widgets.NewQFileDialog2(flowspecWindow, "Load Flowspec Lib", usr.HomeDir, "*.fslib")
+	myFileBox := widgets.NewQFileDialog2(toolWindow, "Load Flowspec Lib", usr.HomeDir, "*.fslib")
 	myFileBox.SetDefaultSuffix("*.fslib")
-	libFileName = myFileBox.GetOpenFileName(flowspecWindow, "Load Flowspec Lib", usr.HomeDir, "*.fslib", "*.fslib", 0)
+	libFileName = myFileBox.GetOpenFileName(toolWindow, "Load Flowspec Lib", usr.HomeDir, "*.fslib", "*.fslib", 0)
 	BgpFsActivLib = nil // makes BgpFsActiveLib eligeable for garbage collection
 	cleanupTree(myTree)
 	openFsLibJsonFile(libFileName, &BgpFsActivLib, myTree)

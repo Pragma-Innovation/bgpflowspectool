@@ -189,7 +189,7 @@ func showRouteToItem(pathList []*table.Path, myTree *widgets.QTreeWidget) {
 		myItem.SetText(3, nexthop)
 		myItem.SetText(4, p.UUID().String())
 	}
-	for i := 0; i < 4; i++ {
+	for i := 1; i < 4; i++ {
 		myTree.ResizeColumnToContents(i)
 	}
 }
