@@ -150,6 +150,8 @@ var (
 	regexpPckLenValidator     *gui.QRegExpValidator
 )
 
+var iconsPath string = ":/qml/images"
+
 func main() {
 	// launch gobgp API client
 	timeout := grpc.WithTimeout(time.Second)
@@ -163,7 +165,7 @@ func main() {
 
 	widgets.NewQApplication(len(os.Args), os.Args)
 	toolWindow = widgets.NewQMainWindow(nil, 0)
-	toolWindow.SetGeometry(core.NewQRect4(100, 100, 1200, 1000))
+	toolWindow.SetGeometry(core.NewQRect4(100, 50, 1100, 950))
 
 	toolWindow.SetWindowTitle("Gabu - Toolbar")
 	var toolCentralWidget = widgets.NewQWidget(nil, 0)
@@ -172,16 +174,26 @@ func main() {
 	toolCentralLayout.SetContentsMargins(0, 0, 0, 0)
 	toolCentralWidget.SetLayout(toolCentralLayout)
 	toolWindow.SetCentralWidget(toolCentralWidget)
-	// Tool main window menu bar
+	// Tool main window tool bar and menu
+	// Menu
+	var toolMainMenuBar = widgets.NewQMenuBar(toolWindow)
+	var menuBgp = toolMainMenuBar.AddMenu2("&BGP")
+	// menuBgp.SetGeometry2(10, 10, 1000, 20)
+	// toolbar
 	var toolMainToolBar = widgets.NewQToolBar2(toolWindow)
 	toolMainToolBar.SetAllowedAreas(core.Qt__LeftToolBarArea)
 	toolMainToolBar.SetOrientation(core.Qt__Vertical)
 	toolWindow.AddToolBar(core.Qt__LeftToolBarArea, toolMainToolBar)
-	//var actionFlowspecRaise = widgets.NewQAction2("Flowspec", toolMainToolBar)
-	//var actionConsoleRaise = widgets.NewQAction2("Console", toolMainToolBar)
-	var toolBarFlowspecAction = toolMainToolBar.AddAction("flowspec")
-	var toolBarConsoleAction = toolMainToolBar.AddAction("Console")
-	toolMainToolBar.SetIconSize(core.NewQSize2(100, 100))
+	// action on menu and tool bar
+	var flowspecIcon = gui.NewQIcon5(iconsPath+"/48x48/settings.png")
+	var toolFlowspecAction = menuBgp.AddAction2(flowspecIcon, "&Manage Rules")
+	toolMainToolBar.QWidget.AddAction(toolFlowspecAction)
+	// action console on menu and tool bar
+	var consoleIcon = gui.NewQIcon5(iconsPath+"/48x48/laptop.png")
+	var toolConsoleAction = menuBgp.AddAction2(consoleIcon, "&Check Neighbors")
+	toolMainToolBar.QWidget.AddAction(toolConsoleAction)
+	toolMainToolBar.SetIconSize(core.NewQSize2(48, 48))
+
 	var toolRightMainWidget = widgets.NewQWidget(toolCentralWidget, 0)
 	var toolRightMainWidgetLayout = widgets.NewQVBoxLayout()
 	toolRightMainWidgetLayout.SetSpacing(0)
@@ -193,12 +205,14 @@ func main() {
 	var consoleLayerMainWidget = widgets.NewQWidget(layeredMainWidget, 0)
 	indexConsoleMainWidget = layeredMainWidget.AddWidget(consoleLayerMainWidget)
 	indexFlowspecMainWidget = layeredMainWidget.AddWidget(flowspecLayerMainWidget)
+	// put flowspec widget as default widget
+	layeredMainWidget.SetCurrentIndex(indexFlowspecMainWidget)
 	buildConsoleWidget(consoleLayerMainWidget)
 	buildFlowspecWidget(flowspecLayerMainWidget)
 	toolRightMainWidgetLayout.AddWidget(layeredMainWidget, 0, 0)
 	// Connect tool bar actions to functions
-	toolBarFlowspecAction.ConnectTriggered(func(checked bool) { toolFspecButtonPushed(layeredMainWidget) })
-	toolBarConsoleAction.ConnectTriggered(func (checked bool) { toolConsolButtonClicked(layeredMainWidget) })
+	toolFlowspecAction.ConnectTriggered(func(checked bool) { toolFspecButtonPushed(layeredMainWidget) })
+	toolConsoleAction.ConnectTriggered(func (checked bool) { toolConsolButtonClicked(layeredMainWidget) })
 	//toolCentralLayout.AddWidget(sideMenuBarMainWidget, 0, 0)
 	toolCentralLayout.AddWidget(toolRightMainWidget, 0, 0)
 	toolWindow.Show()
