@@ -45,7 +45,7 @@ As of today, this tool has been tested against 7750 Nokia routers. Next step wil
 # Install and use the tool
 If you just want to evaluate this tool, you can dowload a VM image ready to use from the Pragma Innovation static web repository : http://static.pragma-innovation.fr/flowspec-rr-vm.qcow2
 
-Install this qcow on your KVM hypervisor using a default virtio NAT interface and using the login: flowspec-rr and sudoer password: flowspec-rr.
+Install this qcow on your KVM hypervisor using a default virtio NAT interface and using the sudoer login: flowspec-rr and password: flowspec-rr.
 
 Once logged in, run ```start x``` and look at README.txt file on the desktop.
 
