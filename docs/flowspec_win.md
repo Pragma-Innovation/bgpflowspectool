@@ -28,7 +28,7 @@ You will load this library from a library file as shown in the window :
 
 ![Loading library](/docs/lib-select.png.jpg)
 
-## BGP flowspec RIB and update
+### BGP flowspec RIB and update
 
 In order to push a rule from the library to the RIB, select it in the list of rule and push the "Push to RIB button"
 
@@ -41,4 +41,15 @@ By pushing the delete button, you are able to delete the selected active entry. 
 For more easier use, the RIB tool can be detached from the Flowspec main window (the RIB window is a dock window of the flowspec window).
 
 ![Flowspec delete rib](/docs/dock-window.png.jpg)
+
+## RIB management and bottom part of the window
+
+The bottom part of the window help to manage the gobgp flowspec RIB. With the load/reload button you will update the list of active flowspec routes in the gobgp stack. A radio button allow you to select between IPv4 and IPv6 flowspec routes.
+
+![Flowspec load rib](/docs/load-rib.png.jpg)
+
+You can also delete an active entry bby selecting the entry and push the delete button.
+
+![Flowspec load rib](/docs/delete.png.jpg)
+
 
