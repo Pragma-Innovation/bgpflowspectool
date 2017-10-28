@@ -31,7 +31,9 @@ You will have to create a VM or use a bare metal server, install the OS of your 
 # Tutorial and features
 The main window is organized with a logic of layered windows that you can bring to the front using the tool bar on the left of the main window.
 
-There are two icons for now, one for the flowspec configuration an one for the so called console window that bings couple of troubleshooting feature.
+There are two icons for now, one for the flowspec configuration an one for the so called console window that brings couple of troubleshooting feature.
+
+The main window has been structured to easily add new features by adding new windows and icons on the left of the main window.
 
 ![flowspec-win](/docs/main-window.png.jpg)
 
@@ -39,6 +41,13 @@ There are two icons for now, one for the flowspec configuration an one for the s
 * [Console window](https://github.com/Matt-Texier/local-mitigation-agent/blob/master/docs/console_win.md)
 
 As of today, this tool has been tested against 7750 Nokia routers. Next step will be about testing this tool against other router vendors. Please note that this tool provide facilities to configure BGP flowspec but Gobgp provide the BGP stack. As such, most interoperability concerns are mainly related to gobgp stack.
+
+# Install and use the tool
+If you just want to evaluate this tool, you can dowload a VM image ready to use from the Pragma Innovation static web repository : http://static.pragma-innovation.fr/flowspec-rr-vm.qcow2
+
+Install this qcow on your KVM hypervisor using a default virtio NAT interface and using the login: flowspec-rr and sudoer password: flowspec-rr.
+
+Once logged in, run ```start x``` and look at README.txt file on the desktop.
 
 # Install and configure your development machine
 
