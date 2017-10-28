@@ -32,7 +32,7 @@ You will load this library from a library file as shown in the window :
 
 In order to push a rule from the library to the RIB, select it in the list of rule and push the "Push to RIB button"
 
-![Flowspec push](/docs/flowspec-win-push.png)
+![Flowspec push](/docs/push-rule-to-rib.jpeg)
 
 By clicking Load / reload button of the RIB tool, you will see the active flowspec routes. Select which adress familly you would like to display.
 
@@ -40,5 +40,5 @@ By pushing the delete button, you are able to delete the selected active entry. 
 
 For more easier use, the RIB tool can be detached from the Flowspec main window (the RIB window is a dock window of the flowspec window).
 
-![Flowspec delete rib](/docs/Screenshot-delete-uui-notes.png)
+![Flowspec delete rib](/docs/dock-window.png.jpg)
 
