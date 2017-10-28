@@ -34,7 +34,7 @@ You will have to create a VM or use a bare metal server, install the OS of your 
 * [Basic main window](https://github.com/Matt-Texier/local-mitigation-agent/blob/master/docs/main_win.md)
 * [Flowspec window](https://github.com/Matt-Texier/local-mitigation-agent/blob/master/docs/flowspec_win.md)
 
-![flowspec-win](/docs/dock-window.png.jpg)
+![flowspec-win](/docs/main-window.png.jpg)
 
 * [Console window](https://github.com/Matt-Texier/local-mitigation-agent/blob/master/docs/console_win.md)
 
