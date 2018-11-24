@@ -22,7 +22,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	bgpcli "github.com/Pragma-innovation/bgpflowspectool/gobgpclient"
+	bgpcli "github.com/Pragma-Innovation/bgpflowspectool/gobgpclient"
 	api "github.com/osrg/gobgp/api"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -178,7 +178,6 @@ func main() {
 	// Menu
 	var toolMainMenuBar = widgets.NewQMenuBar(toolWindow)
 	var menuBgp = toolMainMenuBar.AddMenu2("&BGP")
-	// menuBgp.SetGeometry2(10, 10, 1000, 20)
 	// toolbar
 	var toolMainToolBar = widgets.NewQToolBar2(toolWindow)
 	toolMainToolBar.SetAllowedAreas(core.Qt__LeftToolBarArea)
